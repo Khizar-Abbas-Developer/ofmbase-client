@@ -1,9 +1,9 @@
-import { create } from 'zustand';
-import { supabase } from './supabase';
-import type { User } from '@supabase/supabase-js';
-import type { Database } from './database.types';
+import { create } from "zustand";
+import { supabase } from "./supabase";
+import type { User } from "@supabase/supabase-js";
+import type { Database } from "./database.types";
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 interface AuthState {
   user: User | null;
@@ -19,14 +19,17 @@ interface AuthState {
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 1000; // 1 second
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const fetchProfileWithRetry = async (userId: string, retries = MAX_RETRIES): Promise<Profile> => {
+const fetchProfileWithRetry = async (
+  userId: string,
+  retries = MAX_RETRIES
+): Promise<Profile> => {
   try {
     const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
       .single();
 
     if (profileError) {
@@ -34,7 +37,7 @@ const fetchProfileWithRetry = async (userId: string, retries = MAX_RETRIES): Pro
         await sleep(RETRY_DELAY);
         return fetchProfileWithRetry(userId, retries - 1);
       }
-      throw new Error('Failed to fetch user profile after multiple attempts');
+      throw new Error("Failed to fetch user profile after multiple attempts");
     }
 
     if (!profile) {
@@ -42,7 +45,7 @@ const fetchProfileWithRetry = async (userId: string, retries = MAX_RETRIES): Pro
         await sleep(RETRY_DELAY);
         return fetchProfileWithRetry(userId, retries - 1);
       }
-      throw new Error('Profile not found after multiple attempts');
+      throw new Error("Profile not found after multiple attempts");
     }
 
     return profile;
@@ -62,7 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   signIn: async (email: string, password: string) => {
     try {
       if (!email || !password) {
-        throw new Error('Email and password are required');
+        throw new Error("Email and password are required");
       }
 
       const normalizedEmail = email.toLowerCase().trim();
@@ -73,31 +76,31 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
 
       if (error) {
-        if (error.message === 'Invalid login credentials') {
-          throw new Error('Invalid email or password. Please try again.');
+        if (error.message === "Invalid login credentials") {
+          throw new Error("Invalid email or password. Please try again.");
         }
         throw error;
       }
 
       if (!data.user) {
-        throw new Error('No user data returned');
+        throw new Error("No user data returned");
       }
 
       const profile = await fetchProfileWithRetry(data.user.id);
       set({ user: data.user, profile });
     } catch (error: any) {
-      console.error('Sign in error:', error);
-      throw new Error(error.message || 'Failed to sign in');
+      console.error("Sign in error:", error);
+      throw new Error(error.message || "Failed to sign in");
     }
   },
   signUp: async (email: string, password: string) => {
     try {
       if (!email || !password) {
-        throw new Error('Email and password are required');
+        throw new Error("Email and password are required");
       }
 
       if (password.length < 6) {
-        throw new Error('Password must be at least 6 characters long');
+        throw new Error("Password must be at least 6 characters long");
       }
 
       const normalizedEmail = email.toLowerCase().trim();
@@ -108,17 +111,17 @@ export const useAuthStore = create<AuthState>((set) => ({
         password,
         options: {
           emailRedirectTo: `${siteUrl}/auth/callback`,
-        }
+        },
       });
 
       if (error) throw error;
-      if (!data.user) throw new Error('No user data returned');
+      if (!data.user) throw new Error("No user data returned");
 
       const profile = await fetchProfileWithRetry(data.user.id);
       set({ user: data.user, profile });
     } catch (error: any) {
-      console.error('Sign up error:', error);
-      throw new Error(error.message || 'Failed to create account');
+      console.error("Sign up error:", error);
+      throw new Error(error.message || "Failed to create account");
     }
   },
   signOut: async () => {
@@ -127,14 +130,17 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (error) throw error;
       set({ user: null, profile: null });
     } catch (error: any) {
-      console.error('Sign out error:', error);
-      throw new Error(error.message || 'Failed to sign out');
+      console.error("Sign out error:", error);
+      throw new Error(error.message || "Failed to sign out");
     }
   },
   loadProfile: async () => {
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
       if (sessionError) throw sessionError;
 
       if (!session) {
@@ -149,31 +155,33 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoading: false,
       });
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error("Error loading profile:", error);
       set({ user: null, profile: null, isLoading: false });
     }
   },
   resendVerification: async (email: string) => {
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/resend-verification`;
-      
+      const apiUrl = `${
+        import.meta.env.VITE_SUPABASE_URL
+      }/functions/v1/resend-verification`;
+
       const response = await fetch(apiUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({ email: normalizedEmail }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to resend verification email');
+        throw new Error(data.error || "Failed to resend verification email");
       }
     } catch (error: any) {
-      console.error('Error resending verification:', error);
-      throw new Error(error.message || 'Failed to resend verification email');
+      console.error("Error resending verification:", error);
+      throw new Error(error.message || "Failed to resend verification email");
     }
   },
 }));

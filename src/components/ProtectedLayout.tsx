@@ -14,9 +14,9 @@ const ProtectedLayout: React.FC = () => {
     );
   }
 
-  if (!user || !profile) {
-    return <Navigate to="/signin" replace />;
-  }
+  // if (!user || !profile) {
+  //   return <Navigate to="/signin" replace />;
+  // }
 
   return (
     <div className="flex h-screen bg-slate-100">

@@ -27,6 +27,7 @@ import Costumes from "./components/Costumes";
 import Financials from "./components/Financials";
 import Credentials from "./components/Credentials";
 import Settings from "./components/Settings";
+import VerifyEmail from "./components/Auth/VerifyEmail";
 
 function App() {
   const loadProfile = useAuthStore((state) => state.loadProfile);
@@ -44,6 +45,7 @@ function App() {
         <Route element={<AuthLayout />}>
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/verify-email/:token" element={<VerifyEmail />} />
         </Route>
 
         {/* Protected Routes */}

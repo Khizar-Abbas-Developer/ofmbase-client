@@ -1,16 +1,21 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../lib/store";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const SignUp: React.FC = () => {
+  const navigate = useNavigate();
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isVerificationSent, setIsVerificationSent] = useState(false);
+  const signUp = useAuthStore((state) => state.signUp);
   const resendVerification = useAuthStore((state) => state.resendVerification);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, value?: string) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
@@ -19,20 +24,30 @@ const SignUp: React.FC = () => {
       const dataToSend = {
         email,
         password,
+        method: "custom",
       };
-      console.log(dataToSend);
+      const response = await axios.post(`${URL}/api/user/register`, dataToSend);
       setIsVerificationSent(true);
+      setIsVerificationSent(true);
+
+      toast.success(response.data.message);
     } catch (err: any) {
-      setError(err.message || "Failed to create account");
+      if (value === "already") {
+        setError("Email is already verified");
+
+        navigate("/signin");
+        return;
+      }
+      setError(err.response.data.message || "Failed to create account");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResendVerification = async () => {
+  const handleResendVerification = async (e: React.FormEvent) => {
     try {
       setIsLoading(true);
-      await resendVerification(email);
+      await handleSubmit(e, "already");
       setIsVerificationSent(true);
       setError("");
     } catch (err: any) {
@@ -58,7 +73,7 @@ const SignUp: React.FC = () => {
             <p>We've sent a verification link to {email}</p>
           </div>
           <button
-            onClick={handleResendVerification}
+            onClick={(e) => handleResendVerification(e)}
             disabled={isLoading}
             className="text-blue-600 hover:text-blue-700 font-medium"
           >
