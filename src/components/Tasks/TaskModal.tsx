@@ -1,0 +1,198 @@
+import React, { useState, useEffect } from 'react';
+import { X, Calendar } from 'lucide-react';
+import { Employee } from '../Employees';
+import type { Database } from '../../lib/database.types';
+
+type Task = Database['public']['Tables']['tasks']['Row'];
+
+interface TaskModalProps {
+  mode?: 'add' | 'edit';
+  task?: Task | null;
+  onClose: () => void;
+  onSave: (task: Omit<Task, 'created_at' | 'updated_at'>) => void;
+  employees: Employee[];
+}
+
+const TaskModal: React.FC<TaskModalProps> = ({
+  mode = 'add',
+  task,
+  onClose,
+  onSave,
+  employees,
+}) => {
+  const [formData, setFormData] = useState<Partial<Task>>({
+    title: '',
+    description: '',
+    priority: 'medium',
+    assigned_to: undefined,
+    due_date: undefined,
+    status: 'pending',
+  });
+
+  useEffect(() => {
+    if (task && mode === 'edit') {
+      setFormData({
+        title: task.title,
+        description: task.description || '',
+        priority: task.priority,
+        assigned_to: task.assigned_to,
+        due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : undefined,
+        status: task.status,
+      });
+    }
+  }, [task, mode]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title || !formData.priority) return;
+
+    const taskData = {
+      title: formData.title,
+      description: formData.description || '',
+      priority: formData.priority as Task['priority'],
+      assigned_to: formData.assigned_to,
+      due_date: formData.due_date,
+      status: formData.status as Task['status'],
+    };
+
+    if (mode === 'edit' && task) {
+      onSave({
+        ...taskData,
+        id: task.id,
+      });
+    } else {
+      onSave(taskData);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value === '' ? undefined : value,
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
+      <div className="relative min-h-screen flex items-center justify-center p-4">
+        <div className="relative bg-white rounded-2xl max-w-2xl w-full">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+            <h2 className="text-xl font-semibold text-slate-800">
+              {mode === 'edit' ? 'Edit Task' : 'Add New Task'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-150"
+            >
+              <X className="h-5 w-5 text-slate-400" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <div>
+              <input
+                type="text"
+                name="title"
+                placeholder="What needs to be done?"
+                required
+                value={formData.title}
+                onChange={handleChange}
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <textarea
+                name="description"
+                placeholder="Add details..."
+                rows={4}
+                value={formData.description}
+                onChange={handleChange}
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <select
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="low">Low Priority</option>
+                  <option value="medium">Medium Priority</option>
+                  <option value="high">High Priority</option>
+                </select>
+              </div>
+
+              <div className="flex-1">
+                <select
+                  name="assigned_to"
+                  value={formData.assigned_to || ''}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Assign to</option>
+                  {employees.map(employee => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex-1">
+                <div className="relative">
+                  <input
+                    type="date"
+                    name="due_date"
+                    value={formData.due_date || ''}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {mode === 'edit' && (
+              <div>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-xl transition-colors duration-150"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
+              >
+                {mode === 'edit' ? 'Save Changes' : 'Create Task'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaskModal;

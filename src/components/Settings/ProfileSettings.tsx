@@ -1,0 +1,85 @@
+import React, { useState } from 'react';
+import { Trash2 } from 'lucide-react';
+
+interface Profile {
+  fullName: string;
+  email: string;
+}
+
+const ProfileSettings = () => {
+  const [profile, setProfile] = useState<Profile>({
+    fullName: '',
+    email: '',
+  });
+
+  const handleUpdateProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle profile update
+  };
+
+  const handleDeleteAccount = () => {
+    // Handle account deletion
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      // Proceed with account deletion
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          Personal Information
+        </h2>
+        <form onSubmit={handleUpdateProfile} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={profile.fullName}
+              onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              value={profile.email}
+              disabled
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-500"
+            />
+            <p className="mt-1 text-sm text-slate-500">Email cannot be changed</p>
+          </div>
+
+          <button
+            type="submit"
+            className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+          >
+            Update Profile
+          </button>
+        </form>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h2>
+        <p className="text-sm text-slate-600 mb-4">
+          Permanently delete your account and all associated data, including all employee accounts. This action cannot be undone.
+        </p>
+        <button
+          onClick={handleDeleteAccount}
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
+        >
+          <Trash2 className="h-5 w-5" />
+          Delete Account
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default ProfileSettings;
