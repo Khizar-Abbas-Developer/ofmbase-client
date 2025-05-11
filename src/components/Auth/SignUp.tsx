@@ -1,27 +1,29 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuthStore } from '../../lib/store';
-import { AlertCircle } from 'lucide-react';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuthStore } from "../../lib/store";
 
 const SignUp: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isVerificationSent, setIsVerificationSent] = useState(false);
-  const signUp = useAuthStore(state => state.signUp);
-  const resendVerification = useAuthStore(state => state.resendVerification);
+  const resendVerification = useAuthStore((state) => state.resendVerification);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
-      await signUp(email, password);
+      const dataToSend = {
+        email,
+        password,
+      };
+      console.log(dataToSend);
       setIsVerificationSent(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to create account');
+      setError(err.message || "Failed to create account");
     } finally {
       setIsLoading(false);
     }
@@ -32,7 +34,7 @@ const SignUp: React.FC = () => {
       setIsLoading(true);
       await resendVerification(email);
       setIsVerificationSent(true);
-      setError('');
+      setError("");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -43,7 +45,9 @@ const SignUp: React.FC = () => {
   return (
     <div className="w-full max-w-md bg-white rounded-2xl shadow-sm p-8">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-slate-800">Create your account</h1>
+        <h1 className="text-2xl font-bold text-slate-800">
+          Create your account
+        </h1>
         <p className="text-slate-500 mt-2">Get started with your agency</p>
       </div>
 
@@ -58,7 +62,7 @@ const SignUp: React.FC = () => {
             disabled={isLoading}
             className="text-blue-600 hover:text-blue-700 font-medium"
           >
-            {isLoading ? 'Sending...' : 'Resend verification email'}
+            {isLoading ? "Sending..." : "Resend verification email"}
           </button>
         </div>
       ) : (
@@ -103,11 +107,11 @@ const SignUp: React.FC = () => {
             disabled={isLoading}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {isLoading ? 'Creating account...' : 'Create Account'}
+            {isLoading ? "Creating account..." : "Create Account"}
           </button>
 
           <p className="text-center text-sm text-slate-500">
-            Already have an account?{' '}
+            Already have an account?{" "}
             <Link to="/signin" className="text-blue-600 hover:text-blue-700">
               Sign in
             </Link>
