@@ -1,11 +1,12 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuthStore } from '../../lib/store';
+import React from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 
 const AuthLayout: React.FC = () => {
-  const { user, isLoading } = useAuthStore();
+  const { currentUser, loading } = useAppSelector((state) => state.user);
+  console.log(currentUser);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -13,7 +14,7 @@ const AuthLayout: React.FC = () => {
     );
   }
 
-  if (user) {
+  if (currentUser) {
     return <Navigate to="/" replace />;
   }
 

@@ -1,8 +1,14 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { useAppDispatch } from "../../redux/hooks";
+import { singInSuccess } from "../../redux/user/userSlice";
 
 const SignIn: React.FC = () => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,9 +25,14 @@ const SignIn: React.FC = () => {
         email,
         password,
       };
-      console.log(dataToSend);
+      const response = await axios.post(`${URL}/api/user/login`, dataToSend);
+      console.log(response.data.user);
+
+      toast.success(response.data.message);
+      dispatch(singInSuccess(response.data.user));
+      navigate("/");
     } catch (err: any) {
-      setError(err.message || "Failed to sign in");
+      setError(err.response.data.message || "Failed to sign in");
     } finally {
       setIsLoading(false);
     }

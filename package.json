@@ -11,6 +11,7 @@
     "create-test-users": "node scripts/create-test-users.js"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.8.1",
     "@supabase/supabase-js": "^2.39.3",
     "@vercel/speed-insights": "^1.2.0",
     "axios": "^1.9.0",
@@ -19,8 +20,10 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.5.2",
+    "react-redux": "^9.2.0",
     "react-router-dom": "^6.22.3",
     "recharts": "^2.15.2",
+    "redux-persist": "^6.0.0",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

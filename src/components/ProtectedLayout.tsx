@@ -1,12 +1,12 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuthStore } from '../lib/store';
-import Sidebar from './Sidebar';
+import React from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { useAppSelector } from "../../src/redux/hooks"; // Adjust the path as needed
+
+import Sidebar from "./Sidebar";
 
 const ProtectedLayout: React.FC = () => {
-  const { user, profile, isLoading } = useAuthStore();
-
-  if (isLoading) {
+  const { currentUser, loading } = useAppSelector((state) => state.user);
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -14,9 +14,9 @@ const ProtectedLayout: React.FC = () => {
     );
   }
 
-  // if (!user || !profile) {
-  //   return <Navigate to="/signin" replace />;
-  // }
+  if (!currentUser) {
+    return <Navigate to="/signin" replace />;
+  }
 
   return (
     <div className="flex h-screen bg-slate-100">
