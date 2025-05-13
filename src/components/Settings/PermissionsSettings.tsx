@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import React, { useState, useEffect } from "react";
+import { Plus, Trash2, CheckCircle } from "lucide-react";
+import axios from "axios";
+
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
+import toast from "react-hot-toast";
 
 interface Role {
   id?: string;
@@ -11,25 +14,27 @@ interface Role {
 }
 
 const MODULES = [
-  'Dashboard',
-  'Creators',
-  'Employees',
-  'TimeTracking',
-  'Marketing',
-  'Library',
-  'Tasks',
-  'Financials',
-  'Credentials',
-  'Settings',
+  "Dashboard",
+  "Creators",
+  "Employees",
+  "TimeTracking",
+  "Marketing",
+  "Library",
+  "Tasks",
+  "Financials",
+  "Credentials",
+  "Settings",
 ];
 
 const PermissionsSettings = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [showAddRole, setShowAddRole] = useState(false);
-  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleName, setNewRoleName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+  const { currentUser } = useAppSelector((state) => state.user);
 
   useEffect(() => {
     fetchRoles();
@@ -37,42 +42,29 @@ const PermissionsSettings = () => {
 
   const fetchRoles = async () => {
     try {
-      const { data: agency } = await supabase
-        .from('agencies')
-        .select('id')
-        .eq('profile_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      if (!agency) throw new Error('Agency not found');
-
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('roles')
-        .select(`
-          id,
-          name,
-          role_permissions (
-            permission
-          )
-        `)
-        .eq('agency_id', agency.id);
-
-      if (rolesError) throw rolesError;
-
-      const transformedRoles = rolesData.map(role => ({
-        id: role.id,
-        name: role.name,
-        permissions: MODULES.reduce((acc, module) => ({
-          ...acc,
-          [module]: role.role_permissions?.some(
-            p => p.permission.toLowerCase() === module.toLowerCase()
-          ) || false
-        }), {})
+      const response = await axios.get(
+        `${URL}/api/role/get-role/${currentUser?.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      const fetched = response.data.data.map((r: any) => ({
+        id: r.id || r._id, // depending on actual key name
+        name: r.name || r.roleName, // depending on actual key name
+        permissions: MODULES.reduce(
+          (acc, module) => ({
+            ...acc,
+            [module]: r.permissions?.[module] || false,
+          }),
+          {}
+        ),
       }));
-
-      setRoles(transformedRoles);
+      setRoles(fetched);
     } catch (error) {
-      console.error('Error fetching roles:', error);
-      setError('Failed to load roles');
+      console.error("Error fetching roles:", error);
+      setError("Failed to load roles");
     } finally {
       setIsLoading(false);
     }
@@ -80,125 +72,101 @@ const PermissionsSettings = () => {
 
   const handleAddRole = () => {
     if (!newRoleName.trim()) {
-      setError('Role name is required');
+      setError("Role name is required");
       return;
     }
 
-    if (roles.some(role => role.name.toLowerCase() === newRoleName.toLowerCase())) {
-      setError('A role with this name already exists');
+    if (
+      roles.some(
+        (role) => role.name.toLowerCase() === newRoleName.toLowerCase()
+      )
+    ) {
+      setError("A role with this name already exists");
       return;
     }
 
     const newRole: Role = {
       name: newRoleName,
-      permissions: MODULES.reduce((acc, module) => ({ ...acc, [module]: false }), {}),
+      permissions: MODULES.reduce(
+        (acc, module) => ({ ...acc, [module]: false }),
+        {}
+      ),
     };
 
-    setRoles(prev => [...prev, newRole]);
-    setNewRoleName('');
+    setRoles((prev) => [...prev, newRole]);
     setShowAddRole(false);
-    setError(null);
   };
 
   const handleDeleteRole = async (roleId?: string, roleName?: string) => {
     try {
       if (roleId) {
-        const { error: deleteError } = await supabase
-          .from('roles')
-          .delete()
-          .eq('id', roleId);
-
-        if (deleteError) throw deleteError;
+        await axios.delete(`${URL}/api/role/delete-role/${roleId}`, {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        });
       }
 
-      setRoles(prev => prev.filter(role => 
-        roleId ? role.id !== roleId : role.name !== roleName
-      ));
+      // Update local state
+      setRoles((prev) =>
+        prev.filter((role) =>
+          roleId ? role.id !== roleId : role.name !== roleName
+        )
+      );
+      toast.success("Role delete successfully");
     } catch (error) {
-      console.error('Error deleting role:', error);
-      setError('Failed to delete role');
+      console.error("Error deleting role:", error);
+      setError("Failed to delete role");
     }
   };
 
-  const handlePermissionChange = (roleName: string, module: string, value: boolean) => {
-    setRoles(roles.map(role => 
-      role.name === roleName 
-        ? { ...role, permissions: { ...role.permissions, [module]: value } }
-        : role
-    ));
+  const handlePermissionChange = (
+    roleName: string,
+    module: string,
+    value: boolean
+  ) => {
+    setRoles(
+      roles.map((role) =>
+        role.name === roleName
+          ? { ...role, permissions: { ...role.permissions, [module]: value } }
+          : role
+      )
+    );
   };
 
   const handleSavePermissions = async () => {
     try {
       setError(null);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No active session');
 
-      const { data: agency } = await supabase
-        .from('agencies')
-        .select('id')
-        .eq('profile_id', session.user.id)
-        .single();
-
-      if (!agency) throw new Error('Agency not found');
-
-      // Save each role
       for (const role of roles) {
-        let roleId = role.id;
+        const roleId = role.id;
+        const roleName = role.name;
 
-        // Create or update role
-        if (!roleId) {
-          const { data: newRole, error: roleError } = await supabase
-            .from('roles')
-            .insert({
-              agency_id: agency.id,
-              name: role.name,
-            })
-            .select()
-            .single();
-
-          if (roleError) throw roleError;
-          roleId = newRole.id;
-        }
-
-        // Delete existing permissions
-        const { error: deleteError } = await supabase
-          .from('role_permissions')
-          .delete()
-          .eq('role_id', roleId);
-
-        if (deleteError) throw deleteError;
-
-        // Add new permissions
-        const permissions = Object.entries(role.permissions)
+        const rolePermissionModules = Object.entries(role.permissions)
           .filter(([_, enabled]) => enabled)
-          .map(([module]) => ({
-            role_id: roleId,
-            permission: module.toLowerCase(),
-          }));
+          .map(([module]) => module.toLowerCase());
 
-        if (permissions.length > 0) {
-          const { error: permError } = await supabase
-            .from('role_permissions')
-            .insert(permissions);
+        const dataToSend = {
+          roleId, // Include roleId for update, omit or set null to create new
+          roleName,
+          rolePermissionModules,
+        };
 
-          if (permError) throw permError;
-        }
+        await axios.post(
+          `${URL}/api/role/add-role/${currentUser?.id}`,
+          dataToSend,
+          {
+            headers: {
+              Authorization: `Bearer ${currentUser?.token}`,
+            },
+          }
+        );
       }
-
-      // Show success message
-      setSuccessMessage('Permissions saved successfully');
-      
-      // Hide success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-
-      // Refresh roles
-      await fetchRoles();
+      fetchRoles();
+      toast.success("Roles saved successfully!");
     } catch (error) {
-      console.error('Error saving permissions:', error);
-      setError('Failed to save permissions');
+      console.error("Error saving permissions:", error);
+      setError("Failed to save permissions");
     }
   };
 
@@ -214,9 +182,12 @@ const PermissionsSettings = () => {
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800">Role Permissions</h2>
+          <h2 className="text-lg font-semibold text-slate-800">
+            Role Permissions
+          </h2>
           <p className="text-sm text-slate-500">
-            Manage role permissions across your organization. Changes will apply to all employees with the corresponding role.
+            Manage role permissions across your organization. Changes will apply
+            to all employees with the corresponding role.
           </p>
         </div>
         <button
@@ -260,7 +231,7 @@ const PermissionsSettings = () => {
               <button
                 onClick={() => {
                   setShowAddRole(false);
-                  setNewRoleName('');
+                  setNewRoleName("");
                   setError(null);
                 }}
                 className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
@@ -282,39 +253,74 @@ const PermissionsSettings = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-200">
-              <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Role</th>
-              {MODULES.map(module => (
-                <th key={module} className="px-4 py-3 text-left text-sm font-medium text-slate-500">
+              <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">
+                Role
+              </th>
+              {MODULES.map((module) => (
+                <th
+                  key={module}
+                  className="px-4 py-3 text-left text-sm font-medium text-slate-500"
+                >
                   {module}
                 </th>
               ))}
-              <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">Actions</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
-            {roles.map(role => (
-              <tr key={role.id || role.name} className="border-b border-slate-100">
-                <td className="px-4 py-3 text-sm font-medium text-slate-700">{role.name}</td>
-                {MODULES.map(module => (
-                  <td key={module} className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={role.permissions[module] || false}
-                      onChange={(e) => handlePermissionChange(role.name, module, e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
+            {roles.map((role, index) => {
+              const permissionsSet = new Set(
+                role.rolePermissionModules?.map((mod) => mod.toLowerCase()) ||
+                  Object.keys(role.permissions)
+                    .filter((key) => role.permissions[key])
+                    .map((k) => k.toLowerCase())
+              );
+
+              return (
+                <tr key={index} className="border-b border-slate-100">
+                  <td className="px-4 py-3 text-sm font-medium text-slate-700">
+                    {role.roleName || role.name}
                   </td>
-                ))}
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => handleDeleteRole(role.id, role.name)}
-                    className="p-1 text-slate-400 hover:text-red-600 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+
+                  {MODULES.map((module) => {
+                    const isChecked = permissionsSet.has(module.toLowerCase());
+
+                    return (
+                      <td key={module} className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) =>
+                            handlePermissionChange(
+                              role.roleName || role.name,
+                              module,
+                              e.target.checked
+                            )
+                          }
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                    );
+                  })}
+
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() =>
+                        handleDeleteRole(
+                          role._id || role.id,
+                          role.roleName || role.name
+                        )
+                      }
+                      className="p-1 text-slate-400 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -329,6 +335,6 @@ const PermissionsSettings = () => {
       </div>
     </div>
   );
-}
+};
 
 export default PermissionsSettings;

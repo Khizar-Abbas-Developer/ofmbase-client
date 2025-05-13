@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import ProfileSettings from './ProfileSettings';
 import PermissionsSettings from './PermissionsSettings';
 import BillingSettings from './BillingSettings';

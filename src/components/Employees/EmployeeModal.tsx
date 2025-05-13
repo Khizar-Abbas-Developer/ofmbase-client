@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { X, Plus, CheckCircle } from 'lucide-react';
-import { Employee } from './index';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import React, { useState, useEffect } from "react";
+import { X, Plus, CheckCircle } from "lucide-react";
+import { Employee } from "./index";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
 
 interface Role {
   id: string;
@@ -10,35 +10,35 @@ interface Role {
 }
 
 interface EmployeeModalProps {
-  mode?: 'add' | 'edit';
+  mode?: "add" | "edit";
   employee?: Employee | null;
   onClose: () => void;
-  onSave: (employee: Employee | Omit<Employee, 'id'>) => void;
+  onSave: (employee: Employee | Omit<Employee, "id">) => void;
 }
 
 const EmployeeModal: React.FC<EmployeeModalProps> = ({
-  mode = 'add',
+  mode = "add",
   employee,
   onClose,
   onSave,
 }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<Partial<Employee>>({
-    name: '',
-    email: '',
-    role: '',
+    name: "",
+    email: "",
+    role: "",
     hourly_rate: 0,
-    payment_schedule: '',
-    payment_method: '',
-    paypal_email: '',
-    status: mode === 'add' ? 'invited' : 'active',
+    payment_schedule: "",
+    payment_method: "",
+    paypal_email: "",
+    status: mode === "add" ? "invited" : "active",
   });
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (employee && mode === 'edit') {
+    if (employee && mode === "edit") {
       setFormData(employee);
     }
     fetchRoles();
@@ -47,23 +47,23 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const fetchRoles = async () => {
     try {
       const { data: agency } = await supabase
-        .from('agencies')
-        .select('id')
-        .eq('profile_id', (await supabase.auth.getUser()).data.user?.id)
+        .from("agencies")
+        .select("id")
+        .eq("profile_id", (await supabase.auth.getUser()).data.user?.id)
         .single();
 
       if (!agency) return;
 
       const { data: rolesData, error } = await supabase
-        .from('roles')
-        .select('id, name')
-        .eq('agency_id', agency.id)
-        .order('name');
+        .from("roles")
+        .select("id, name")
+        .eq("agency_id", agency.id)
+        .order("name");
 
       if (error) throw error;
       setRoles(rolesData || []);
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      console.error("Error fetching roles:", error);
     } finally {
       setIsLoading(false);
     }
@@ -78,35 +78,41 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
       email: formData.email,
       role: formData.role,
       hourly_rate: formData.hourly_rate || 0,
-      payment_schedule: formData.payment_schedule || 'monthly',
-      payment_method: formData.payment_method || 'paypal',
+      payment_schedule: formData.payment_schedule || "monthly",
+      payment_method: formData.payment_method || "paypal",
       paypal_email: formData.paypal_email,
-      status: formData.status as Employee['status'],
+      status: formData.status as Employee["status"],
     };
 
     try {
-      if (mode === 'edit' && employee) {
-        await onSave({
-          ...employeeData,
-          id: employee.id,
-        });
-        onClose();
-      } else {
-        await onSave(employeeData);
-        setSuccess(true);
-        // Keep modal open to show success message
-        setTimeout(() => {
-          onClose();
-        }, 3000);
-      }
+      console.log(employeeData);
+
+      // if (mode === "edit" && employee) {
+      //   await onSave({
+      //     ...employeeData,
+      //     id: employee.id,
+      //   });
+      //   onClose();
+      // } else {
+      //   await onSave(employeeData);
+      //   setSuccess(true);
+      //   // Keep modal open to show success message
+      //   setTimeout(() => {
+      //     onClose();
+      //   }, 3000);
+      // }
     } catch (error: any) {
+      console.log(error);
+
       // Error handling is done in the parent component
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -114,21 +120,28 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   const handleAddRole = () => {
     onClose();
-    navigate('/settings', { state: { activeTab: 'permissions' } });
+    navigate("/settings", { state: { activeTab: "permissions" } });
   };
 
   if (success) {
     return (
       <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50"
+          onClick={onClose}
+        />
         <div className="relative min-h-screen flex items-center justify-center p-4">
           <div className="relative bg-white rounded-2xl max-w-md w-full p-6 text-center">
             <div className="mb-4 flex justify-center">
               <CheckCircle className="h-12 w-12 text-green-500" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">Employee Invited Successfully!</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">
+              Employee Invited Successfully!
+            </h3>
             <p className="text-slate-600 mb-4">
-              An invitation email has been sent to {formData.email}. They'll need to verify their email and set up their account to access the system.
+              An invitation email has been sent to {formData.email}. They'll
+              need to verify their email and set up their account to access the
+              system.
             </p>
             <button
               onClick={onClose}
@@ -149,7 +162,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         <div className="relative bg-white rounded-2xl max-w-lg w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
             <h2 className="text-xl font-semibold text-slate-800">
-              {mode === 'edit' ? 'Edit Employee' : 'Add New Employee'}
+              {mode === "edit" ? "Edit Employee" : "Add New Employee"}
             </h2>
             <button
               onClick={onClose}
@@ -212,8 +225,10 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select a role</option>
-                {roles.map(role => (
-                  <option key={role.id} value={role.name}>{role.name}</option>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.name}>
+                    {role.name}
+                  </option>
                 ))}
               </select>
               {roles.length === 0 && (
@@ -274,7 +289,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               </select>
             </div>
 
-            {formData.payment_method === 'paypal' && (
+            {formData.payment_method === "paypal" && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   PayPal Email
@@ -290,7 +305,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               </div>
             )}
 
-            {mode === 'edit' && (
+            {mode === "edit" && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Status
@@ -321,7 +336,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
               >
-                {mode === 'edit' ? 'Save Changes' : 'Add Employee'}
+                {mode === "edit" ? "Save Changes" : "Add Employee"}
               </button>
             </div>
           </form>
