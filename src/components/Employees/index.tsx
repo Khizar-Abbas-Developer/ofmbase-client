@@ -42,8 +42,12 @@ const Employees = () => {
 
   const fetchEmployees = async () => {
     try {
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
       const response = await axios.get(
-        `${URL}/api/employee/get-employee/${currentUser?.id}`,
+        `${URL}/api/employee/get-employee/${requiredId}`,
         {
           headers: {
             Authorization: `Bearer ${currentUser?.token}`,
@@ -130,7 +134,6 @@ const Employees = () => {
 
   const handleDeleteEmployee = async (id: string) => {
     try {
-      console.log(id);
       const requiredId =
         currentUser?.ownerId === "Agency Owner itself"
           ? currentUser?.id
@@ -143,7 +146,6 @@ const Employees = () => {
           },
         }
       );
-      console.log(response);
       fetchEmployees();
     } catch (error) {
       console.error("Error deleting employee:", error);
@@ -183,13 +185,15 @@ const Employees = () => {
             <Search className="h-5 w-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
           </div>
 
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
-          >
-            <Plus className="h-5 w-5" />
-            Add Employee
-          </button>
+          {currentUser?.accountType === "owner" && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
+            >
+              <Plus className="h-5 w-5" />
+              Add Employee
+            </button>
+          )}
         </div>
       </div>
 

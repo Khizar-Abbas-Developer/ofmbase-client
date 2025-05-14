@@ -152,7 +152,6 @@ const CreatorModal: React.FC<CreatorModalProps> = ({
           },
         }
       );
-      console.log(response);
       toast.success(response.data.message);
       onSave();
       setTimeout(() => {

@@ -45,8 +45,12 @@ const Creators: React.FC<CreatorsProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   const fetchCreators = async () => {
     try {
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
       const response = await axios.get(
-        `${URL}/api/creator/get-creators/${currentUser?.id}`,
+        `${URL}/api/creator/get-creators/${requiredId}`,
         {
           headers: {
             Authorization: `Bearer ${currentUser?.token}`,
@@ -107,13 +111,15 @@ const Creators: React.FC<CreatorsProps> = ({ onAdd, onUpdate, onDelete }) => {
                 <Search className="h-5 w-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
               </div>
 
-              <button
-                onClick={() => openCreatorModal("add")}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
-              >
-                <Plus className="h-5 w-5" />
-                Add Creator
-              </button>
+              {currentUser?.accountType === "owner" && (
+                <button
+                  onClick={() => openCreatorModal("add")}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add Creator
+                </button>
+              )}
             </div>
           </div>
 
@@ -151,24 +157,26 @@ const Creators: React.FC<CreatorsProps> = ({ onAdd, onUpdate, onDelete }) => {
                       </h3>
                       <p className="text-sm text-slate-500">{creator.email}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) =>
-                          handleActionClick(e, () =>
-                            openCreatorModal("edit", creator)
-                          )
-                        }
-                        className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={(e) => handleDelete(e, creator._id)}
-                        className="p-2 text-red-400 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {currentUser?.accountType === "owner" && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) =>
+                            handleActionClick(e, () =>
+                              openCreatorModal("edit", creator)
+                            )
+                          }
+                          className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDelete(e, creator._id)}
+                          className="p-2 text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">

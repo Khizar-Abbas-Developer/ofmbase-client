@@ -53,7 +53,6 @@ async function createTestUser(email, password) {
 
     if (error) throw error;
 
-    console.log(`Successfully created user: ${email}`);
     return data.user;
   } catch (error) {
     console.error(`Failed to create user ${email}:`, error.message);

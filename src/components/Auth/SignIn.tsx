@@ -26,8 +26,6 @@ const SignIn: React.FC = () => {
         password,
       };
       const response = await axios.post(`${URL}/api/user/login`, dataToSend);
-      console.log(response.data.user);
-
       toast.success(response.data.message);
       dispatch(singInSuccess(response.data.user));
       navigate("/");

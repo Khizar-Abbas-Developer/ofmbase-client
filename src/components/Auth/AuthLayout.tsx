@@ -4,7 +4,6 @@ import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 
 const AuthLayout: React.FC = () => {
   const { currentUser, loading } = useAppSelector((state) => state.user);
-  console.log(currentUser);
 
   if (loading) {
     return (
