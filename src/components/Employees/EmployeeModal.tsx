@@ -2,7 +2,10 @@ import React, { useState, useEffect } from "react";
 import { X, Plus, CheckCircle } from "lucide-react";
 import { Employee } from "./index";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase";
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
+
+import axios from "axios";
+import toast from "react-hot-toast";
 
 interface Role {
   id: string;
@@ -13,6 +16,7 @@ interface EmployeeModalProps {
   mode?: "add" | "edit";
   employee?: Employee | null;
   onClose: () => void;
+  refresh: () => void;
   onSave: (employee: Employee | Omit<Employee, "id">) => void;
 }
 
@@ -21,57 +25,28 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   employee,
   onClose,
   onSave,
+  refresh,
 }) => {
   const navigate = useNavigate();
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+  const { currentUser } = useAppSelector((state) => state.user);
   const [formData, setFormData] = useState<Partial<Employee>>({
-    name: "",
-    email: "",
-    role: "",
-    hourly_rate: 0,
-    payment_schedule: "",
-    payment_method: "",
-    paypal_email: "",
-    status: mode === "add" ? "invited" : "active",
+    name: employee ? employee.name : "",
+    email: employee ? employee.email : "",
+    role: employee ? employee.role : "",
+    hourly_rate: employee ? employee.hourly_rate : 0,
+    payment_schedule: employee ? employee.payment_schedule : "",
+    payment_method: employee ? employee.payment_method : "",
+    paypal_email: employee ? employee.paypal_email : "",
+    status: employee ? employee.status : mode === "add" ? "invited" : "active",
   });
+
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    if (employee && mode === "edit") {
-      setFormData(employee);
-    }
-    fetchRoles();
-  }, [employee, mode]);
-
-  const fetchRoles = async () => {
-    try {
-      const { data: agency } = await supabase
-        .from("agencies")
-        .select("id")
-        .eq("profile_id", (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      if (!agency) return;
-
-      const { data: rolesData, error } = await supabase
-        .from("roles")
-        .select("id, name")
-        .eq("agency_id", agency.id)
-        .order("name");
-
-      if (error) throw error;
-      setRoles(rolesData || []);
-    } catch (error) {
-      console.error("Error fetching roles:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.role) return;
 
     const employeeData = {
       name: formData.name,
@@ -85,23 +60,90 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     };
 
     try {
-      console.log(employeeData);
+      const requiredId =
+        currentUser.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const response = await axios.post(
+        `${URL}/api/employee/add-employee/${requiredId}`,
+        employeeData,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
 
-      // if (mode === "edit" && employee) {
-      //   await onSave({
-      //     ...employeeData,
-      //     id: employee.id,
-      //   });
-      //   onClose();
-      // } else {
-      //   await onSave(employeeData);
-      //   setSuccess(true);
-      //   // Keep modal open to show success message
-      //   setTimeout(() => {
-      //     onClose();
-      //   }, 3000);
-      // }
+      setFormData({
+        name: "",
+        email: "",
+        role: "",
+        hourly_rate: 0,
+        payment_schedule: "",
+        payment_method: "",
+        paypal_email: "",
+        status: mode === "add" ? "invited" : "active",
+      });
+      refresh();
+      setTimeout(() => {
+        onClose();
+      }, 500);
+      onClose();
+      toast.success(response.data.message);
     } catch (error: any) {
+      toast.error(error.response.data.message);
+      console.log(error);
+
+      // Error handling is done in the parent component
+    }
+  };
+
+  const updateEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const employeeData = {
+      name: formData.name,
+      email: formData.email,
+      role: formData.role,
+      hourly_rate: formData.hourly_rate || 0,
+      payment_schedule: formData.payment_schedule || "monthly",
+      payment_method: formData.payment_method || "paypal",
+      paypal_email: formData.paypal_email,
+      status: formData.status as Employee["status"],
+    };
+
+    try {
+      const requiredId =
+        currentUser.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const response = await axios.patch(
+        `${URL}/api/employee/update-employee/${requiredId}`,
+        employeeData,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+
+      setFormData({
+        name: "",
+        email: "",
+        role: "",
+        hourly_rate: 0,
+        payment_schedule: "",
+        payment_method: "",
+        paypal_email: "",
+        status: mode === "add" ? "invited" : "active",
+      });
+      refresh();
+      setTimeout(() => {
+        onClose();
+      }, 500);
+      onClose();
+      toast.success(response.data.message);
+    } catch (error: any) {
+      toast.error(error.response.data.message);
       console.log(error);
 
       // Error handling is done in the parent component
@@ -122,6 +164,29 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     onClose();
     navigate("/settings", { state: { activeTab: "permissions" } });
   };
+
+  const fetchRoles = async () => {
+    try {
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const response = await axios.get(
+        `${URL}/api/role/get-all-roles/${requiredId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      setRoles(response.data.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    fetchRoles();
+  }, []);
 
   if (success) {
     return (
@@ -172,7 +237,10 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form
+            onSubmit={mode === "edit" ? updateEmployee : handleSubmit}
+            className="p-6 space-y-6"
+          >
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Name
@@ -226,8 +294,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               >
                 <option value="">Select a role</option>
                 {roles.map((role) => (
-                  <option key={role.id} value={role.name}>
-                    {role.name}
+                  <option key={role._id} value={role.roleName}>
+                    {role.roleName}
                   </option>
                 ))}
               </select>

@@ -1,25 +1,66 @@
-import React, { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
+import axios from "axios";
+import toast from "react-hot-toast";
 
 interface Profile {
   fullName: string;
-  email: string;
 }
 
 const ProfileSettings = () => {
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+  const { currentUser } = useAppSelector((state) => state.user);
   const [profile, setProfile] = useState<Profile>({
-    fullName: '',
-    email: '',
+    fullName: "",
   });
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     // Handle profile update
+    try {
+      await axios.post(
+        `${URL}/api/user/update-profil/${currentUser?.id}`,
+        profile,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      toast.success("Profile updated successfully")
+    } catch (error) {
+      console.log(error);
+    }
   };
-
+  const fetchUserProfile = async () => {
+    // Handle profile update
+    try {
+      const response = await axios.get(
+        `${URL}/api/user/fetch-profile/${currentUser?.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      setProfile({
+        fullName: response.data.fullName,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
   const handleDeleteAccount = () => {
     // Handle account deletion
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+    if (
+      confirm(
+        "Are you sure you want to delete your account? This action cannot be undone."
+      )
+    ) {
       // Proceed with account deletion
     }
   };
@@ -37,8 +78,10 @@ const ProfileSettings = () => {
             </label>
             <input
               type="text"
-              value={profile.fullName}
-              onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
+              value={profile?.fullName}
+              onChange={(e) =>
+                setProfile({ ...profile, fullName: e.target.value })
+              }
               className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -49,11 +92,13 @@ const ProfileSettings = () => {
             </label>
             <input
               type="email"
-              value={profile.email}
+              value={currentUser?.email}
               disabled
               className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-500"
             />
-            <p className="mt-1 text-sm text-slate-500">Email cannot be changed</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Email cannot be changed
+            </p>
           </div>
 
           <button
@@ -68,7 +113,8 @@ const ProfileSettings = () => {
       <div>
         <h2 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h2>
         <p className="text-sm text-slate-600 mb-4">
-          Permanently delete your account and all associated data, including all employee accounts. This action cannot be undone.
+          Permanently delete your account and all associated data, including all
+          employee accounts. This action cannot be undone.
         </p>
         <button
           onClick={handleDeleteAccount}
@@ -80,6 +126,6 @@ const ProfileSettings = () => {
       </div>
     </div>
   );
-}
+};
 
 export default ProfileSettings;

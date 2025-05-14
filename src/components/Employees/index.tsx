@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Plus, Search, UserCircle, Clock } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import EmployeeModal from './EmployeeModal';
-import EmployeeCard from './EmployeeCard';
-import EmployeeDetailModal from './EmployeeDetailModal';
-import TimeTracking from './TimeTracking';
+import React, { useState } from "react";
+import { Plus, Search, UserCircle, Clock } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import EmployeeModal from "./EmployeeModal";
+import EmployeeCard from "./EmployeeCard";
+import EmployeeDetailModal from "./EmployeeDetailModal";
+import TimeTracking from "./TimeTracking";
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
+import axios from "axios";
 
 export interface Employee {
   id: string;
@@ -15,15 +17,21 @@ export interface Employee {
   payment_schedule: string;
   payment_method: string;
   paypal_email?: string;
-  status: 'invited' | 'active' | 'inactive';
+  status: "invited" | "active" | "inactive";
   created_at?: string;
   updated_at?: string;
 }
 
 const Employees = () => {
-  const [activeTab, setActiveTab] = useState<'employees' | 'timeTracking'>('employees');
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+  const { currentUser } = useAppSelector((state) => state.user);
+  const [activeTab, setActiveTab] = useState<"employees" | "timeTracking">(
+    "employees"
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null
+  );
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,30 +42,33 @@ const Employees = () => {
 
   const fetchEmployees = async () => {
     try {
-      const { data, error } = await supabase
-        .from('employees')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setEmployees(data || []);
+      const response = await axios.get(
+        `${URL}/api/employee/get-employee/${currentUser?.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      setEmployees(response.data.employees);
     } catch (error) {
-      console.error('Error fetching employees:', error);
+      console.log(error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAddEmployee = async (employeeData: Omit<Employee, 'id'>) => {
+  const handleAddEmployee = async (employeeData: Omit<Employee, "id">) => {
     try {
       // First, create the employee auth account and get the user ID
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-employee`;
+      const apiUrl = `${
+        import.meta.env.VITE_SUPABASE_URL
+      }/functions/v1/invite-employee`;
       const response = await fetch(apiUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           name: employeeData.name,
@@ -68,24 +79,24 @@ const Employees = () => {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to create employee account');
+        throw new Error(data.error || "Failed to create employee account");
       }
 
       const { userId } = await response.json();
 
       // Then create the employee record
       const { data, error } = await supabase
-        .from('employees')
+        .from("employees")
         .insert([{ ...employeeData, id: userId }])
         .select()
         .single();
 
       if (error) throw error;
 
-      setEmployees(prev => [data, ...prev]);
+      setEmployees((prev) => [data, ...prev]);
       setIsModalOpen(false);
     } catch (error: any) {
-      console.error('Error adding employee:', error);
+      console.error("Error adding employee:", error);
       alert(error.message);
     }
   };
@@ -93,7 +104,7 @@ const Employees = () => {
   const handleUpdateEmployee = async (employee: Employee) => {
     try {
       const { error } = await supabase
-        .from('employees')
+        .from("employees")
         .update({
           name: employee.name,
           role: employee.role,
@@ -103,32 +114,39 @@ const Employees = () => {
           paypal_email: employee.paypal_email,
           status: employee.status,
         })
-        .eq('id', employee.id);
+        .eq("id", employee.id);
 
       if (error) throw error;
 
-      setEmployees(prev =>
-        prev.map(e => e.id === employee.id ? employee : e)
+      setEmployees((prev) =>
+        prev.map((e) => (e.id === employee.id ? employee : e))
       );
       setIsModalOpen(false);
       setSelectedEmployee(null);
     } catch (error) {
-      console.error('Error updating employee:', error);
+      console.error("Error updating employee:", error);
     }
   };
 
   const handleDeleteEmployee = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('employees')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setEmployees(prev => prev.filter(e => e.id !== id));
+      console.log(id);
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser?.id
+          : currentUser.ownerId;
+      const response = await axios.delete(
+        `${URL}/api/employee/delete-employee/${requiredId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      console.log(response);
+      fetchEmployees();
     } catch (error) {
-      console.error('Error deleting employee:', error);
+      console.error("Error deleting employee:", error);
     }
   };
 
@@ -150,7 +168,9 @@ const Employees = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Employees</h1>
-          <p className="text-slate-500 mt-1">Manage your agency's team members</p>
+          <p className="text-slate-500 mt-1">
+            Manage your agency's team members
+          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -162,7 +182,7 @@ const Employees = () => {
             />
             <Search className="h-5 w-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
           </div>
-          
+
           <button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
@@ -177,21 +197,21 @@ const Employees = () => {
         <div className="border-b border-slate-200">
           <nav className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('employees')}
+              onClick={() => setActiveTab("employees")}
               className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 text-sm font-medium ${
-                activeTab === 'employees'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                activeTab === "employees"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
               }`}
             >
               Employees
             </button>
             <button
-              onClick={() => setActiveTab('timeTracking')}
+              onClick={() => setActiveTab("timeTracking")}
               className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 text-sm font-medium ${
-                activeTab === 'timeTracking'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                activeTab === "timeTracking"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
               }`}
             >
               <Clock className="h-4 w-4" />
@@ -201,15 +221,19 @@ const Employees = () => {
         </div>
       </div>
 
-      {activeTab === 'employees' ? (
+      {activeTab === "employees" ? (
         <>
           {employees.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 text-center">
               <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
                 <UserCircle className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">No employees yet</h3>
-              <p className="text-slate-500 mb-6">Get started by adding your first team member</p>
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                No employees yet
+              </h3>
+              <p className="text-slate-500 mb-6">
+                Get started by adding your first team member
+              </p>
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
@@ -220,15 +244,15 @@ const Employees = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {employees.map(employee => (
+              {employees.map((employee) => (
                 <EmployeeCard
-                  key={employee.id}
+                  key={employee._id}
                   employee={employee}
                   onEdit={() => {
                     setSelectedEmployee(employee);
                     setIsModalOpen(true);
                   }}
-                  onDelete={() => handleDeleteEmployee(employee.id)}
+                  onDelete={() => handleDeleteEmployee(employee._id)}
                   onClick={() => handleCardClick(employee)}
                 />
               ))}
@@ -241,12 +265,13 @@ const Employees = () => {
 
       {isModalOpen && (
         <EmployeeModal
-          mode={selectedEmployee ? 'edit' : 'add'}
+          mode={selectedEmployee ? "edit" : "add"}
           employee={selectedEmployee}
           onClose={() => {
             setIsModalOpen(false);
             setSelectedEmployee(null);
           }}
+          refresh={fetchEmployees}
           onSave={selectedEmployee ? handleUpdateEmployee : handleAddEmployee}
         />
       )}

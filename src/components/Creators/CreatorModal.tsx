@@ -137,8 +137,12 @@ const CreatorModal: React.FC<CreatorModalProps> = ({
         address: formData.address,
         measurements: formData.measurements,
       };
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
       const response = await axios.patch(
-        `${URL}/api/creator/update-creator/${creator?._id}`,
+        `${URL}/api/creator/update-creator/${requiredId}`,
         dataToSend,
         {
           headers: {

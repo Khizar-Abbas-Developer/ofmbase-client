@@ -67,7 +67,11 @@ const Creators: React.FC<CreatorsProps> = ({ onAdd, onUpdate, onDelete }) => {
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     try {
-      await axios.delete(`${URL}/api/creator/delete-creator/${id}`, {
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser?.ownerId;
+      await axios.delete(`${URL}/api/creator/delete-creator/${requiredId}`, {
         headers: {
           Authorization: `Bearer ${currentUser?.token}`,
         },
