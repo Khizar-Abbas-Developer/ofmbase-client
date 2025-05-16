@@ -9,7 +9,7 @@ import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 import axios from "axios";
 
 export interface Employee {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   role: string;
