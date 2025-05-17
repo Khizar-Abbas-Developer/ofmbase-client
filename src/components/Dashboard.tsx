@@ -105,7 +105,7 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto pt-16 lg:pt-0">
+    <div className="max-w-7xl mx-auto pt-16 lg:pt-0 h-[170vh] lg:h-auto">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 space-y-4 lg:space-y-0">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">
