@@ -179,8 +179,9 @@ const PermissionsSettings = () => {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
+    <div className="px-4 sm:px-6">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">
             Role Permissions
@@ -199,12 +200,14 @@ const PermissionsSettings = () => {
         </button>
       </div>
 
+      {/* Error Message */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-xl">
           {error}
         </div>
       )}
 
+      {/* Success Message */}
       {successMessage && (
         <div className="mb-4 p-4 bg-green-50 text-green-700 rounded-xl flex items-center gap-2">
           <CheckCircle className="h-5 w-5" />
@@ -212,10 +215,11 @@ const PermissionsSettings = () => {
         </div>
       )}
 
+      {/* Add Role Form */}
       {showAddRole && (
         <div className="mb-6 p-4 bg-slate-50 rounded-xl">
-          <div className="flex items-end gap-4">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+            <div className="flex-1 w-full">
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Role Name
               </label>
@@ -240,7 +244,7 @@ const PermissionsSettings = () => {
               </button>
               <button
                 onClick={handleAddRole}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                className="px-2 py-1 lg:px-4 lg:py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-xs lg:text-sm"
               >
                 Add Role
               </button>
@@ -249,8 +253,9 @@ const PermissionsSettings = () => {
         </div>
       )}
 
+      {/* Responsive Table */}
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[600px]">
           <thead>
             <tr className="border-b border-slate-200">
               <th className="px-4 py-3 text-left text-sm font-medium text-slate-500">
@@ -325,6 +330,7 @@ const PermissionsSettings = () => {
         </table>
       </div>
 
+      {/* Save Button */}
       <div className="mt-6 flex justify-end">
         <button
           onClick={handleSavePermissions}

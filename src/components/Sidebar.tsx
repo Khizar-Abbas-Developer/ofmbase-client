@@ -77,58 +77,97 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
   };
 
   return (
-    <div className="w-72 h-full bg-white shadow-lg flex flex-col">
-      {/* Header */}
-      <div className="px-6 py-8 border-b border-slate-100">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-indigo-600 rounded-lg">
-            <TrendingUp className="h-6 w-6 text-white" />
-          </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
-            OFMBase
-          </span>
-        </div>
-      </div>
-
-      {/* User Info */}
-      {currentUser && (
-        <div className="px-6 py-4 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-              <UserCircle className="w-6 h-6 text-slate-600" />
+    <>
+      {/* Existing Sidebar */}
+      <div className="hidden md:flex w-72 h-full bg-white shadow-lg flex-col">
+        <div className="px-6 py-8 border-b border-slate-100">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-indigo-600 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-white" />
             </div>
-            <div>
-              <p className="text-sm font-medium text-slate-800">
-                {currentUser.email}
-              </p>
-              <p className="text-xs text-slate-500">
-                {getRoleLabel(currentUser.accountType)}
-              </p>
-            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
+              OFMBase
+            </span>
           </div>
         </div>
-      )}
-
-      {/* Navigation Sections */}
-      <nav className="flex-1 overflow-y-auto p-6 space-y-10">
-        {renderSection("OVERVIEW", dashboardSection)}
-        {renderSection("MANAGEMENT", managementSection)}
-        {renderSection("CONTENT", contentSection)}
-        {renderSection("FINANCIAL", financialSection)}
-        {renderSection("SETTINGS", settingsSection)}
-      </nav>
-
-      {/* Logout */}
-      <div className="border-t border-slate-100 p-6">
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-red-600 border border-red-100 rounded-xl hover:bg-red-50 transition"
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </button>
+        {/* User Info */}
+        {currentUser && (
+          <div className="px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                <UserCircle className="w-6 h-6 text-slate-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-800">
+                  {currentUser.email}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {getRoleLabel(currentUser.accountType)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Navigation Sections */}
+        <nav className="flex-1 overflow-y-auto p-6 space-y-10">
+          {renderSection("OVERVIEW", dashboardSection)}
+          {renderSection("MANAGEMENT", managementSection)}
+          {renderSection("CONTENT", contentSection)}
+          {renderSection("FINANCIAL", financialSection)}
+          {renderSection("SETTINGS", settingsSection)}
+        </nav>
+        {/* Logout */}
+        <div className="border-t border-slate-100 p-6">
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-red-600 border border-red-100 rounded-xl hover:bg-red-50 transition"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+        </div>{" "}
       </div>
-    </div>
+
+      {/* Bottom NavBar - Mobile Only */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white shadow-md border-t border-slate-200 z-50 overflow-x-auto">
+        <div className="flex items-center justify-start space-x-6 px-4 py-2 overflow-x-auto scrollbar-hide">
+          {[
+            ...dashboardSection,
+            ...managementSection,
+            ...contentSection,
+            ...financialSection,
+            ...settingsSection,
+          ]
+            .filter((item) =>
+              currentUser?.accessibleModules?.includes(item.relation)
+            )
+            .map((item) => (
+              <NavLink
+                key={item.relation}
+                to={item.path}
+                onClick={handleNavClick}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center min-w-[60px] text-xs ${
+                    isActive ? "text-indigo-600" : "text-slate-600"
+                  }`
+                }
+              >
+                <item.icon className="h-5 w-5 mb-1" />
+                <span>{item.name}</span>
+              </NavLink>
+            ))}
+
+          {/* Logout Button - Mobile */}
+          <button
+            onClick={handleSignOut}
+            className="flex flex-col items-center justify-center min-w-[60px] text-xs text-red-500"
+          >
+            <LogOut className="h-5 w-5 mb-1" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </>
   );
 };
 

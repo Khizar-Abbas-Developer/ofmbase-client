@@ -1,61 +1,56 @@
-import React from 'react';
-import { Check } from 'lucide-react';
+import React from "react";
+import { Check } from "lucide-react";
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 
 interface Plan {
   name: string;
   price: number;
   features: string[];
   isPopular?: boolean;
-  buttonText: string;
   current?: boolean;
 }
 
 const BillingSettings = () => {
+  const { currentUser } = useAppSelector((state) => state.user);
+  console.log("Current User:", currentUser);
+
   const plans: Plan[] = [
     {
-      name: 'Free',
+      name: "Free",
       price: 0,
-      features: [
-        '1 Creator',
-        '2 Employees',
-        '3GB Content Storage',
-      ],
-      buttonText: 'Current Plan',
+      features: ["1 Creator", "2 Employees", "3GB Content Storage"],
       current: true,
     },
     {
-      name: 'Starter',
+      name: "Starter",
       price: 29,
       features: [
-        'Up to 5 creators',
-        'Up to 3 employees',
-        '10GB Content Storage',
+        "Up to 5 creators",
+        "Up to 3 employees",
+        "10GB Content Storage",
       ],
-      buttonText: 'Subscribe to Starter',
       isPopular: true,
     },
     {
-      name: 'Professional',
+      name: "Professional",
       price: 79,
       features: [
-        'Up to 15 creators',
-        'Up to 10 employees',
-        '50GB Content Storage',
-        'Priority Support',
+        "Up to 15 creators",
+        "Up to 10 employees",
+        "50GB Content Storage",
+        "Priority Support",
       ],
-      buttonText: 'Subscribe to Professional',
     },
     {
-      name: 'Enterprise',
+      name: "Enterprise",
       price: 199,
       features: [
-        'Up to 50 creators',
-        'Up to 30 employees',
-        '200GB Content Storage',
-        '24/7 Priority Support',
-        'Dedicated Account Manager',
+        "Up to 50 creators",
+        "Up to 30 employees",
+        "200GB Content Storage",
+        "24/7 Priority Support",
+        "Dedicated Account Manager",
       ],
-      buttonText: 'Upgrade to Enterprise',
     },
   ];
 
@@ -65,18 +60,20 @@ const BillingSettings = () => {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-slate-800 mb-4">Subscription Plans</h2>
-      
+      <h2 className="text-lg font-semibold text-slate-800 mb-4">
+        Subscription Plans
+      </h2>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {plans.map((plan) => (
           <div
             key={plan.name}
             className={`bg-white rounded-2xl p-6 border ${
-              plan.current
-                ? 'border-blue-200 ring-1 ring-blue-500'
+              currentUser?.subscribedPackage === plan.name
+                ? "border-blue-200 ring-1 ring-blue-500"
                 : plan.isPopular
-                ? 'border-blue-100 bg-blue-50'
-                : 'border-slate-200'
+                ? "border-blue-100 bg-blue-50"
+                : "border-slate-200"
             }`}
           >
             {plan.isPopular && (
@@ -84,9 +81,20 @@ const BillingSettings = () => {
                 Starter
               </span>
             )}
-            <h3 className="text-lg font-semibold text-slate-800">{plan.name}</h3>
+            <h3
+              className={`text-lg font-semibold text-slate-800 ${
+                plan?.name === "Free" &&
+                currentUser.subscribedPackage !== "Free"
+                  ? "text-gray-200"
+                  : "text-slate-800"
+              }`}
+            >
+              {plan.name}
+            </h3>
             <div className="mt-2 flex items-baseline">
-              <span className="text-3xl font-bold text-slate-900">${plan.price}</span>
+              <span className="text-3xl font-bold text-slate-900">
+                ${plan.price}
+              </span>
               <span className="ml-1 text-slate-500">/mo</span>
             </div>
 
@@ -101,20 +109,22 @@ const BillingSettings = () => {
 
             <button
               onClick={() => handleSubscribe(plan)}
-              disabled={plan.current}
               className={`mt-8 w-full px-4 py-2 rounded-xl text-sm font-medium ${
                 plan.current
-                  ? 'bg-blue-50 text-blue-700 cursor-default'
-                  : 'bg-black text-white hover:bg-gray-800'
+                  ? "bg-blue-50 text-blue-700 cursor-default"
+                  : "bg-black text-white hover:bg-gray-800"
               } transition-colors`}
+              disabled={currentUser?.subscribedPackage !== "Free"}
             >
-              {plan.buttonText}
+              {currentUser?.subscribedPackage === plan.name
+                ? "Current Plan"
+                : `Subscribe to ${plan.name}`}
             </button>
           </div>
         ))}
       </div>
     </div>
   );
-}
+};
 
 export default BillingSettings;

@@ -28,7 +28,7 @@ const ProfileSettings = () => {
           },
         }
       );
-      toast.success("Profile updated successfully")
+      toast.success("Profile updated successfully");
     } catch (error) {
       console.log(error);
     }
@@ -66,7 +66,7 @@ const ProfileSettings = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 h-[70vh]">
       <div>
         <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
           Personal Information
