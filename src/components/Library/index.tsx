@@ -44,7 +44,7 @@ interface ContentRequest {
 
 const Library = () => {
   const { currentUser } = useAppSelector((state) => state.user);
-
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const [activeTab, setActiveTab] = useState<"library" | "requests">("library");
   const [folders, setFolders] = useState<ContentFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -92,7 +92,6 @@ const Library = () => {
           },
         }
       );
-      console.log(response.data);
 
       setCreators(response.data.creators || []);
     } catch (error) {
@@ -137,19 +136,33 @@ const Library = () => {
 
   const fetchRequests = async () => {
     try {
-      const { data, error } = await supabase
-        .from("content_requests")
-        .select(
-          `
-          *,
-          creator:creators(name)
-        `
-        )
-        .order("created_at", { ascending: false });
+      const requiredId =
+        currentUser.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const response = await axios.get(
+        `${URL}/api/content-request/get-requests/${requiredId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      console.log(response);
 
-      if (error) throw error;
+      // const { data, error } = await supabase
+      //   .from("content_requests")
+      //   .select(
+      //     `
+      //     *,
+      //     creator:creators(name)
+      //   `
+      //   )
+      //   .order("created_at", { ascending: false });
 
-      setRequests(data || []);
+      // if (error) throw error;
+
+      setRequests(response.data || []);
     } catch (error) {
       console.error("Error fetching requests:", error);
     }
@@ -244,15 +257,7 @@ const Library = () => {
 
   const handleDeleteRequest = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("content_requests")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setRequests((prev) => prev.filter((request) => request.id !== id));
-      setSelectedRequest(null);
+      console.log(id);
     } catch (error) {
       console.error("Error deleting request:", error);
     }
@@ -266,6 +271,14 @@ const Library = () => {
       type: "folder",
     });
   };
+  console.log("Folders:", folders);
+  console.log("Selected Folder:", selectedFolder);
+  console.log("Content:", content);
+  console.log("Requests:", requests);
+  console.log("Selected Content:", selectedContent);
+  console.log("Selected Request:", selectedRequest);
+  console.log("Creators:", creators);
+  console.log("Selected Folder For Request:", selectedFolderForRequest);
 
   const handleConfirmDelete = async () => {
     if (!deleteConfirmation.id) return;
@@ -653,7 +666,7 @@ const Library = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-600">
-                          {request.creator?.name || "-"}
+                          {request.creatorName || "-"}
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-600">
                           {new Date(request.due_date).toLocaleDateString()}

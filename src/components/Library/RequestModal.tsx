@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { X } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 
 interface RequestModalProps {
   onClose: () => void;
@@ -22,7 +23,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
   creators,
   folder,
 }) => {
-  console.log(creators);
+  const { currentUser } = useAppSelector((state) => state.user);
 
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const [title, setTitle] = useState("");
@@ -35,7 +36,6 @@ const RequestModal: React.FC<RequestModalProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  console.log(selectedCreator);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +47,10 @@ const RequestModal: React.FC<RequestModalProps> = ({
         toast.error("Creator not found");
         return;
       }
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser?.id
+          : currentUser?.ownerId;
       setUploadProgress(0);
 
       const totalSize = files.reduce((acc, file) => acc + file.size, 0);
@@ -59,6 +63,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
           formData.append("description", description);
           formData.append("due_date", dueDate);
           formData.append("creatorName", creator.name);
+          formData.append("ownerId", requiredId);
           if (selectedCreator) {
             formData.append("creatorId", selectedCreator);
           }

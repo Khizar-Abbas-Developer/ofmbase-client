@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 
 interface CostumeRequest {
   _id: string;
@@ -37,7 +38,8 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
   request,
   mode = "add",
 }) => {
-  console.log(creators);
+  const { currentUser } = useAppSelector((state) => state.user);
+
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
 
   const [formData, setFormData] = useState({
@@ -71,6 +73,10 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser?.id
+          : currentUser?.ownerId;
       const creator = creators.find((i) => i._id === formData.creatorId);
       if (!creator) {
         toast.error("Creator not found");
@@ -79,8 +85,9 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
       const newFormData = {
         ...formData,
         creatorName: creator ? creator.name : "", // fallback to empty string if not found
+        ownerId: requiredId,
       };
-      const response = await axios.post(
+      await axios.post(
         `${URL}/api/content-request/create-request`,
         newFormData,
         {
@@ -89,8 +96,21 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
           },
         }
       );
-      console.log(response);
+      toast.success(
+        mode === "edit"
+          ? "Costume request updated successfully"
+          : "Costume request created successfully"
+      );
+      onClose();
     } catch (error) {}
+  };
+  const handleUpdateRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      console.log(formData);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handleChange = (
@@ -132,7 +152,10 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form
+            onSubmit={mode === "edit" ? handleUpdateRequest : handleSubmit}
+            className="p-6 space-y-6"
+          >
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">

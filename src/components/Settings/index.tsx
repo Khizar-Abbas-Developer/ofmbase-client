@@ -44,16 +44,18 @@ const Settings = () => {
               </button>
             )}
 
-            <button
-              onClick={() => setActiveTab("billing")}
-              className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 text-sm font-medium ${
-                activeTab === "billing"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-              }`}
-            >
-              Billing
-            </button>
+            {currentUser?.accountType === "owner" && (
+              <button
+                onClick={() => setActiveTab("billing")}
+                className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 text-sm font-medium ${
+                  activeTab === "billing"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                }`}
+              >
+                Billing
+              </button>
+            )}
 
             <button
               onClick={() => setActiveTab("notifications")}
@@ -71,8 +73,14 @@ const Settings = () => {
 
       <div className="bg-white rounded-b-2xl p-6">
         {activeTab === "profile" && <ProfileSettings />}
-        {activeTab === "permissions" && <PermissionsSettings />}
-        {activeTab === "billing" && <BillingSettings />}
+
+        {currentUser?.accountType === "owner" && (
+          <>
+            {activeTab === "permissions" && <PermissionsSettings />}
+            {activeTab === "billing" && <BillingSettings />}
+          </>
+        )}
+
         {activeTab === "notifications" && <NotificationSettings />}
       </div>
     </div>

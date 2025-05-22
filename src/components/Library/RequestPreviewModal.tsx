@@ -1,9 +1,9 @@
-import React from 'react';
-import { X, Download, Trash2, Calendar, User } from 'lucide-react';
+import React from "react";
+import { X, Download, Trash2, Calendar, User } from "lucide-react";
 
 interface RequestPreviewModalProps {
   request: {
-    id: string;
+    _id: string;
     title: string;
     description: string;
     due_date: string;
@@ -33,21 +33,17 @@ const RequestPreviewModal: React.FC<RequestPreviewModalProps> = ({
   const renderMediaPreview = (url: string) => {
     if (isImage(url)) {
       return (
-        <img 
-          src={url} 
+        <img
+          src={url}
           alt="Reference content"
           className="max-h-48 w-full object-cover rounded-lg"
         />
       );
     }
-    
+
     if (isVideo(url)) {
       return (
-        <video 
-          src={url} 
-          controls 
-          className="max-h-48 w-full rounded-lg"
-        >
+        <video src={url} controls className="max-h-48 w-full rounded-lg">
           Your browser does not support the video tag.
         </video>
       );
@@ -66,7 +62,9 @@ const RequestPreviewModal: React.FC<RequestPreviewModalProps> = ({
       <div className="relative min-h-screen flex items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl max-w-2xl w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800">Content Request Details</h2>
+            <h2 className="text-xl font-semibold text-slate-800">
+              Content Request Details
+            </h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-150"
@@ -77,8 +75,12 @@ const RequestPreviewModal: React.FC<RequestPreviewModalProps> = ({
 
           <div className="p-6 space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">{request.title}</h3>
-              <p className="text-slate-600 whitespace-pre-wrap">{request.description}</p>
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                {request.title}
+              </h3>
+              <p className="text-slate-600 whitespace-pre-wrap">
+                {request.description}
+              </p>
             </div>
 
             <div className="flex items-center gap-6">
@@ -91,23 +93,30 @@ const RequestPreviewModal: React.FC<RequestPreviewModalProps> = ({
               {request.creator && (
                 <div className="flex items-center gap-2">
                   <User className="h-5 w-5 text-slate-400" />
-                  <span className="text-sm text-slate-600">{request.creator.name}</span>
+                  <span className="text-sm text-slate-600">
+                    {request.creator.name}
+                  </span>
                 </div>
               )}
-              <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-                request.status === 'pending'
-                  ? 'bg-yellow-50 text-yellow-800'
-                  : request.status === 'completed'
-                  ? 'bg-green-50 text-green-800'
-                  : 'bg-red-50 text-red-800'
-              }`}>
-                {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+              <span
+                className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                  request.status === "pending"
+                    ? "bg-yellow-50 text-yellow-800"
+                    : request.status === "completed"
+                    ? "bg-green-50 text-green-800"
+                    : "bg-red-50 text-red-800"
+                }`}
+              >
+                {request.status.charAt(0).toUpperCase() +
+                  request.status.slice(1)}
               </span>
             </div>
 
             {request.media_urls && request.media_urls.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-slate-700 mb-4">Reference Files</h4>
+                <h4 className="text-sm font-medium text-slate-700 mb-4">
+                  Reference Files
+                </h4>
                 <div className="grid grid-cols-2 gap-4">
                   {request.media_urls.map((url, index) => (
                     <div key={index} className="relative group">
@@ -131,7 +140,7 @@ const RequestPreviewModal: React.FC<RequestPreviewModalProps> = ({
 
           <div className="flex items-center justify-end gap-4 px-6 py-4 border-t border-slate-200">
             <button
-              onClick={() => onDelete(request.id)}
+              onClick={() => onDelete(request._id)}
               className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors duration-150"
             >
               <Trash2 className="h-5 w-5" />

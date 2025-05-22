@@ -58,7 +58,6 @@ const Costumes: React.FC<CostumesProps> = () => {
           },
         }
       );
-      console.log(response.data);
 
       setCreators(response.data.creators || []);
     } catch (error) {
@@ -73,19 +72,23 @@ const Costumes: React.FC<CostumesProps> = () => {
 
   const fetchRequests = async () => {
     try {
-      const { data, error } = await supabase
-        .from("costume_requests")
-        .select(
-          `
-          *,
-          creator:creators(name)
-        `
-        )
-        .order("created_at", { ascending: false });
+      const requierdId =
+        currentUser.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      console.log(requierdId);
 
-      if (error) throw error;
+      const response = await axios.get(
+        `${URL}/api/content-request/get-requests-detail/${requierdId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      console.log(response.data);
 
-      setRequests(data || []);
+      setRequests(response.data || []);
     } catch (error) {
       console.error("Error fetching costume requests:", error);
     } finally {
@@ -119,6 +122,8 @@ const Costumes: React.FC<CostumesProps> = () => {
 
   const handleEditRequest = async (request: CostumeRequest) => {
     try {
+      console.log(request);
+
       const { data, error } = await supabase
         .from("costume_requests")
         .update({
@@ -154,16 +159,7 @@ const Costumes: React.FC<CostumesProps> = () => {
 
   const handleDeleteRequest = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("costume_requests")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setRequests((prev) => prev.filter((r) => r.id !== id));
-      setShowDetailModal(false);
-      setSelectedRequest(null);
+      console.log(id);
     } catch (error) {
       console.error("Error deleting costume request:", error);
     }
@@ -225,12 +221,12 @@ const Costumes: React.FC<CostumesProps> = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {requests.map((request) => (
-                <tr key={request.id} className="hover:bg-slate-50">
+                <tr key={request._id} className="hover:bg-slate-50">
                   <td className="px-6 py-4 text-sm text-slate-600">
                     {request.name}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">
-                    {request.creator?.name || "-"}
+                    {request.creatorName || "-"}
                   </td>
                   <td className="px-6 py-4">
                     <span
@@ -244,15 +240,15 @@ const Costumes: React.FC<CostumesProps> = () => {
                           : "bg-red-50 text-red-800"
                       }`}
                     >
-                      {request.status.charAt(0).toUpperCase() +
-                        request.status.slice(1)}
+                      {/* {request.status.charAt(0).toUpperCase() +
+                        request.status.slice(1)} */}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">
                     ${request.paymentAmount}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">
-                    {new Date(request.created_at).toLocaleDateString()}
+                    {new Date(request.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end items-center gap-2">
@@ -328,7 +324,7 @@ const Costumes: React.FC<CostumesProps> = () => {
             setIsEditing(true);
             setShowRequestModal(true);
           }}
-          onDelete={() => handleDeleteRequest(selectedRequest.id)}
+          onDelete={() => handleDeleteRequest(selectedRequest._id)}
         />
       )}
     </div>
