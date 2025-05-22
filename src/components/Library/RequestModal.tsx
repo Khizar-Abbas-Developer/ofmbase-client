@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { X } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import React, { useState, useRef } from "react";
+import { X } from "lucide-react";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 interface RequestModalProps {
   onClose: () => void;
@@ -11,66 +12,87 @@ interface RequestModalProps {
     creator_id?: string;
     media_urls?: string[];
   }) => void;
-  creators: { id: string; name: string }[];
+  creators: { _id: string; name: string }[];
   folder?: { id: string; name: string } | null;
 }
 
 const RequestModal: React.FC<RequestModalProps> = ({
   onClose,
-  onSave,
+  // onSave,
   creators,
   folder,
 }) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState(folder ? `Folder: ${folder.name}\n\n` : '');
-  const [dueDate, setDueDate] = useState('');
-  const [selectedCreator, setSelectedCreator] = useState('');
+  console.log(creators);
+
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState(
+    folder ? `Folder: ${folder.name}\n\n` : ""
+  );
+  const [dueDate, setDueDate] = useState("");
+  const [selectedCreator, setSelectedCreator] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  console.log(selectedCreator);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setIsUploading(true);
+      const creator = creators.find((i) => i._id === selectedCreator);
+      if (!creator) {
+        toast.error("Creator not found");
+        return;
+      }
       setUploadProgress(0);
-      
-      // Upload files and get URLs
-      const mediaUrls = await Promise.all(
-        files.map(async (file, index) => {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-          const filePath = `content-requests/${fileName}`;
 
-          const { error: uploadError, data } = await supabase.storage
-            .from('media')
-            .upload(filePath, file);
+      const totalSize = files.reduce((acc, file) => acc + file.size, 0);
+      let uploadedBytes = 0;
+      // const mediaUrls =
+      await Promise.all(
+        files.map(async (file) => {
+          const formData = new FormData();
+          formData.append("title", title);
+          formData.append("description", description);
+          formData.append("due_date", dueDate);
+          formData.append("creatorName", creator.name);
+          if (selectedCreator) {
+            formData.append("creatorId", selectedCreator);
+          }
+          formData.append("file", file);
 
-          if (uploadError) throw uploadError;
+          const response = await axios.post(
+            `${URL}/api/content-request/create-request`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+              onUploadProgress: (progressEvent) => {
+                const currentUploaded = progressEvent.loaded;
+                uploadedBytes += currentUploaded;
+                const progress = Math.min(
+                  (uploadedBytes / totalSize) * 100,
+                  100
+                );
+                setUploadProgress(progress);
+              },
+            }
+          );
 
-          // Update progress
-          setUploadProgress(((index + 1) / files.length) * 100);
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('media')
-            .getPublicUrl(filePath);
-
+          const { publicUrl } = response.data;
           return publicUrl;
         })
       );
 
-      onSave({
-        title,
-        description,
-        due_date: dueDate,
-        creator_id: selectedCreator || undefined,
-        media_urls: mediaUrls,
-      });
+      // You can continue with saving contentRequest to MongoDB here...
+      // (like your current logic)
     } catch (error) {
-      console.error('Error uploading files:', error);
-      alert('Failed to upload files. Please try again.');
+      console.error("Error uploading files:", error);
+      alert("Failed to upload files. Please try again.");
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -80,16 +102,16 @@ const RequestModal: React.FC<RequestModalProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      
+
       // Validate file types
-      const validFiles = selectedFiles.filter(file => {
-        const isImage = file.type.startsWith('image/');
-        const isVideo = file.type.startsWith('video/');
+      const validFiles = selectedFiles.filter((file) => {
+        const isImage = file.type.startsWith("image/");
+        const isVideo = file.type.startsWith("video/");
         return isImage || isVideo;
       });
 
       if (validFiles.length !== selectedFiles.length) {
-        alert('Only image and video files are allowed');
+        alert("Only image and video files are allowed");
       }
 
       setFiles(validFiles);
@@ -102,7 +124,9 @@ const RequestModal: React.FC<RequestModalProps> = ({
       <div className="relative min-h-screen flex items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl max-w-2xl w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800">Request Content from Creator</h2>
+            <h2 className="text-xl font-semibold text-slate-800">
+              Request Content from Creator
+            </h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-150"
@@ -122,8 +146,10 @@ const RequestModal: React.FC<RequestModalProps> = ({
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select a creator</option>
-                {creators.map(creator => (
-                  <option key={creator.id} value={creator.id}>{creator.name}</option>
+                {creators.map((creator) => (
+                  <option key={creator._id} value={creator._id}>
+                    {creator.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -184,11 +210,16 @@ const RequestModal: React.FC<RequestModalProps> = ({
               {files.length > 0 && (
                 <div className="mt-2 space-y-2">
                   {files.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between text-sm text-slate-600 bg-slate-50 p-2 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between text-sm text-slate-600 bg-slate-50 p-2 rounded-lg"
+                    >
                       <span>{file.name}</span>
                       <button
                         type="button"
-                        onClick={() => setFiles(files.filter((_, i) => i !== index))}
+                        onClick={() =>
+                          setFiles(files.filter((_, i) => i !== index))
+                        }
                         className="text-red-500 hover:text-red-600"
                       >
                         <X className="h-4 w-4" />
@@ -202,7 +233,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
             {isUploading && (
               <div className="space-y-2">
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-blue-500 transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
@@ -226,7 +257,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
                 disabled={isUploading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150 disabled:opacity-50"
               >
-                {isUploading ? 'Uploading...' : 'Send Request'}
+                {isUploading ? "Uploading..." : "Send Request"}
               </button>
             </div>
           </form>

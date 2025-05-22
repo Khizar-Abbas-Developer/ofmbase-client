@@ -1,97 +1,116 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { Creator } from '../Creators';
+import React, { useState, useEffect } from "react";
+import { X } from "lucide-react";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 interface CostumeRequest {
-  id: string;
-  subname: string;
-  creator_id: string;
-  costumenumber: string;
-  videotype?: string;
-  videolength?: string;
-  subrequest?: string;
-  outfitdescription?: string;
-  payment: number;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  _id: string;
+  name: string;
+  creatorId: string;
+  constumeNumber: string;
+  videoType?: string;
+  videoLength?: string;
+  subRequest?: string;
+  outFitDescription?: string;
+  paymentAmount: number;
+  status: "pending" | "approved" | "rejected" | "completed";
+}
+
+interface Creator {
+  _id: string;
+  name: string;
 }
 
 interface CostumeRequestModalProps {
   onClose: () => void;
-  onSave: (request: CostumeRequest | Omit<CostumeRequest, 'id' | 'status'>) => void;
+  onSave: (
+    request: CostumeRequest | Omit<CostumeRequest, "id" | "status">
+  ) => void;
   creators: Creator[];
   request?: CostumeRequest | null;
-  mode?: 'add' | 'edit';
+  mode?: "add" | "edit";
 }
-
 const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
   onClose,
-  onSave,
-  creators = [], // Provide default empty array
+  // onSave,
+  creators = [],
   request,
-  mode = 'add',
+  mode = "add",
 }) => {
+  console.log(creators);
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+
   const [formData, setFormData] = useState({
-    subname: '',
-    creator_id: '',
-    costumenumber: '',
-    videotype: '',
-    videolength: '',
-    subrequest: '',
-    outfitdescription: '',
-    payment: '',
-    status: 'pending' as CostumeRequest['status'],
+    name: "",
+    creatorId: "",
+    constumeNumber: "",
+    videoType: "",
+    videoLength: "",
+    subRequest: "",
+    outFitDescription: "",
+    paymentAmount: "",
+    status: "pending" as CostumeRequest["status"],
   });
 
   useEffect(() => {
-    if (request && mode === 'edit') {
+    if (request && mode === "edit") {
       setFormData({
-        subname: request.subname,
-        creator_id: request.creator_id,
-        costumenumber: request.costumenumber,
-        videotype: request.videotype || '',
-        videolength: request.videolength || '',
-        subrequest: request.subrequest || '',
-        outfitdescription: request.outfitdescription || '',
-        payment: request.payment.toString(),
+        name: request.name,
+        creatorId: request.creatorId,
+        constumeNumber: request.constumeNumber,
+        videoType: request.videoType || "",
+        videoLength: request.videoLength || "",
+        subRequest: request.subRequest || "",
+        outFitDescription: request.outFitDescription || "",
+        paymentAmount: request.paymentAmount.toString(),
         status: request.status,
       });
     }
   }, [request, mode]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const requestData = {
-      ...formData,
-      payment: parseFloat(formData.payment),
-    };
-
-    if (mode === 'edit' && request) {
-      onSave({
-        ...requestData,
-        id: request.id,
-      });
-    } else {
-      onSave(requestData);
-    }
+    try {
+      const creator = creators.find((i) => i._id === formData.creatorId);
+      if (!creator) {
+        toast.error("Creator not found");
+        return;
+      }
+      const newFormData = {
+        ...formData,
+        creatorName: creator ? creator.name : "", // fallback to empty string if not found
+      };
+      const response = await axios.post(
+        `${URL}/api/content-request/create-request`,
+        newFormData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      console.log(response);
+    } catch (error) {}
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const costumeNumbers = [
-    { value: 'first', label: 'First Costume' },
-    { value: 'second', label: 'Second Costume' },
-    { value: 'third', label: 'Third Costume' },
-    { value: 'fourth', label: 'Fourth Costume' },
-    { value: 'fifth', label: 'Fifth Costume' }
+  const constumeNumbers = [
+    { value: "first", label: "First Costume" },
+    { value: "second", label: "Second Costume" },
+    { value: "third", label: "Third Costume" },
+    { value: "fourth", label: "Fourth Costume" },
+    { value: "fifth", label: "Fifth Costume" },
   ];
 
   return (
@@ -101,7 +120,9 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
         <div className="relative bg-white rounded-2xl max-w-2xl w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
             <h2 className="text-xl font-semibold text-slate-800">
-              {mode === 'edit' ? 'Edit Costume Request' : 'Create New Costume Request'}
+              {mode === "edit"
+                ? "Edit Costume Request"
+                : "Create New Costume Request"}
             </h2>
             <button
               onClick={onClose}
@@ -119,9 +140,9 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  name="subname"
+                  name="name"
                   required
-                  value={formData.subname}
+                  value={formData.name}
                   onChange={handleChange}
                   placeholder="Enter subscriber name"
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -132,15 +153,17 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
                   Creator *
                 </label>
                 <select
-                  name="creator_id"
+                  name="creatorId"
                   required
-                  value={formData.creator_id}
+                  value={formData.creatorId}
                   onChange={handleChange}
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select creator</option>
-                  {creators.map(creator => (
-                    <option key={creator.id} value={creator.id}>{creator.name}</option>
+                  {creators.map((creator) => (
+                    <option key={creator._id} value={creator._id}>
+                      {creator.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -152,14 +175,14 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
                   Costume Number *
                 </label>
                 <select
-                  name="costumenumber"
+                  name="constumeNumber"
                   required
-                  value={formData.costumenumber}
+                  value={formData.constumeNumber}
                   onChange={handleChange}
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select costume number</option>
-                  {costumeNumbers.map(costume => (
+                  {constumeNumbers.map((costume) => (
                     <option key={costume.value} value={costume.value}>
                       {costume.label}
                     </option>
@@ -168,15 +191,15 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Payment Amount ($) *
+                  paymentAmount Amount ($) *
                 </label>
                 <input
                   type="number"
-                  name="payment"
+                  name="paymentAmount"
                   required
                   min="0"
                   step="0.01"
-                  value={formData.payment}
+                  value={formData.paymentAmount}
                   onChange={handleChange}
                   placeholder="Amount paid by subscriber"
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -191,8 +214,8 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  name="videotype"
-                  value={formData.videotype}
+                  name="videoType"
+                  value={formData.videoType}
                   onChange={handleChange}
                   placeholder="E.g. Solo, JOI, etc."
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -204,8 +227,8 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  name="videolength"
-                  value={formData.videolength}
+                  name="videoLength"
+                  value={formData.videoLength}
                   onChange={handleChange}
                   placeholder="E.g. 5 minutes, 10 minutes"
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -218,8 +241,8 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
                 Sub Request
               </label>
               <textarea
-                name="subrequest"
-                value={formData.subrequest}
+                name="subRequest"
+                value={formData.subRequest}
                 onChange={handleChange}
                 rows={4}
                 placeholder="Detailed request from the subscriber"
@@ -232,8 +255,8 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
                 Outfit Description
               </label>
               <textarea
-                name="outfitdescription"
-                value={formData.outfitdescription}
+                name="outFitDescription"
+                value={formData.outFitDescription}
                 onChange={handleChange}
                 rows={4}
                 placeholder="Description of the outfit requested"
@@ -241,7 +264,7 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
               />
             </div>
 
-            {mode === 'edit' && (
+            {mode === "edit" && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Status
@@ -272,7 +295,7 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
                 type="submit"
                 className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors duration-150"
               >
-                {mode === 'edit' ? 'Save Changes' : 'Create Request'}
+                {mode === "edit" ? "Save Changes" : "Create Request"}
               </button>
             </div>
           </form>

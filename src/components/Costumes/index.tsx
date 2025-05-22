@@ -1,21 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { Eye, MoreHorizontal } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import CostumeRequestModal from './CostumeRequestModal';
-import CostumeDetailModal from './CostumeDetailModal';
-import { Creator } from '../Creators';
+import React, { useState, useEffect } from "react";
+import { Eye, MoreHorizontal } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import CostumeRequestModal from "./CostumeRequestModal";
+import CostumeDetailModal from "./CostumeDetailModal";
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
+
+import axios from "axios";
 
 interface CostumeRequest {
   id: string;
-  subname: string;
-  creator_id: string;
-  costumenumber: string;
-  videotype?: string;
-  videolength?: string;
-  subrequest?: string;
-  outfitdescription?: string;
-  payment: number;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  name: string;
+  creatorId: string;
+  costumeNumber: string;
+  videoType?: string;
+  videoLength?: string;
+  subRequest?: string;
+  outFitDescription?: string;
+  paymentAmount: number;
+  status: "pending" | "approved" | "rejected" | "completed";
   created_at: string;
   creator?: {
     name: string;
@@ -26,105 +28,144 @@ interface CostumesProps {
   creators: Creator[];
 }
 
-const Costumes: React.FC<CostumesProps> = ({ creators = [] }) => { // Add default empty array
+const Costumes: React.FC<CostumesProps> = () => {
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+  // Add default empty array
   const [requests, setRequests] = useState<CostumeRequest[]>([]);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<CostumeRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<CostumeRequest | null>(
+    null
+  );
+  const [creators, setCreators] = useState<Creator[]>([]);
+  const { currentUser } = useAppSelector((state: any) => state.user);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchCreators = async () => {
+    try {
+      const requiredId =
+        currentUser.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_PUBLIC_BASE_URL
+        }/api/creator/get-creators/${requiredId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      console.log(response.data);
+
+      setCreators(response.data.creators || []);
+    } catch (error) {
+      console.error("Error fetching creators:", error);
+    }
+  };
+
   useEffect(() => {
     fetchRequests();
+    fetchCreators();
   }, []);
 
   const fetchRequests = async () => {
     try {
       const { data, error } = await supabase
-        .from('costume_requests')
-        .select(`
+        .from("costume_requests")
+        .select(
+          `
           *,
           creator:creators(name)
-        `)
-        .order('created_at', { ascending: false });
+        `
+        )
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       setRequests(data || []);
     } catch (error) {
-      console.error('Error fetching costume requests:', error);
+      console.error("Error fetching costume requests:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCreateRequest = async (request: Omit<CostumeRequest, 'id' | 'status' | 'created_at'>) => {
+  const handleCreateRequest = async (
+    request: Omit<CostumeRequest, "id" | "status" | "created_at">
+  ) => {
     try {
       const { data, error } = await supabase
-        .from('costume_requests')
+        .from("costume_requests")
         .insert([request])
-        .select(`
+        .select(
+          `
           *,
           creator:creators(name)
-        `)
+        `
+        )
         .single();
 
       if (error) throw error;
 
-      setRequests(prev => [data, ...prev]);
+      setRequests((prev) => [data, ...prev]);
       setShowRequestModal(false);
     } catch (error) {
-      console.error('Error creating costume request:', error);
+      console.error("Error creating costume request:", error);
     }
   };
 
   const handleEditRequest = async (request: CostumeRequest) => {
     try {
       const { data, error } = await supabase
-        .from('costume_requests')
+        .from("costume_requests")
         .update({
-          subname: request.subname,
-          creator_id: request.creator_id,
-          costumenumber: request.costumenumber,
-          videotype: request.videotype,
-          videolength: request.videolength,
-          subrequest: request.subrequest,
-          outfitdescription: request.outfitdescription,
-          payment: request.payment,
+          name: request.name,
+          creatorId: request.creatorId,
+          costumeNumber: request.costumeNumber,
+          videoType: request.videoType,
+          videoLength: request.videoLength,
+          subRequest: request.subRequest,
+          outFitDescription: request.outFitDescription,
+          paymentAmount: request.paymentAmount,
           status: request.status,
         })
-        .eq('id', request.id)
-        .select(`
+        .eq("id", request.id)
+        .select(
+          `
           *,
           creator:creators(name)
-        `)
+        `
+        )
         .single();
 
       if (error) throw error;
 
-      setRequests(prev => prev.map(r => r.id === request.id ? data : r));
+      setRequests((prev) => prev.map((r) => (r.id === request.id ? data : r)));
       setShowRequestModal(false);
       setSelectedRequest(null);
       setIsEditing(false);
     } catch (error) {
-      console.error('Error updating costume request:', error);
+      console.error("Error updating costume request:", error);
     }
   };
 
   const handleDeleteRequest = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('costume_requests')
+        .from("costume_requests")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
 
-      setRequests(prev => prev.filter(r => r.id !== id));
+      setRequests((prev) => prev.filter((r) => r.id !== id));
       setShowDetailModal(false);
       setSelectedRequest(null);
     } catch (error) {
-      console.error('Error deleting costume request:', error);
+      console.error("Error deleting costume request:", error);
     }
   };
 
@@ -162,33 +203,54 @@ const Costumes: React.FC<CostumesProps> = ({ creators = [] }) => { // Add defaul
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-200">
-                <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">Sub Name</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">Creator</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">Payment</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">Created Date</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-slate-500">Action</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">
+                  Sub Name
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">
+                  Creator
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">
+                  paymentAmount
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">
+                  Created Date
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-slate-500">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {requests.map(request => (
+              {requests.map((request) => (
                 <tr key={request.id} className="hover:bg-slate-50">
-                  <td className="px-6 py-4 text-sm text-slate-600">{request.subname}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{request.creator?.name || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">
+                    {request.name}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-600">
+                    {request.creator?.name || "-"}
+                  </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      request.status === 'pending'
-                        ? 'bg-yellow-50 text-yellow-800'
-                        : request.status === 'approved'
-                        ? 'bg-blue-50 text-blue-800'
-                        : request.status === 'completed'
-                        ? 'bg-green-50 text-green-800'
-                        : 'bg-red-50 text-red-800'
-                    }`}>
-                      {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        request.status === "pending"
+                          ? "bg-yellow-50 text-yellow-800"
+                          : request.status === "approved"
+                          ? "bg-blue-50 text-blue-800"
+                          : request.status === "completed"
+                          ? "bg-green-50 text-green-800"
+                          : "bg-red-50 text-red-800"
+                      }`}
+                    >
+                      {request.status.charAt(0).toUpperCase() +
+                        request.status.slice(1)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-600">${request.payment}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">
+                    ${request.paymentAmount}
+                  </td>
                   <td className="px-6 py-4 text-sm text-slate-600">
                     {new Date(request.created_at).toLocaleDateString()}
                   </td>
@@ -219,8 +281,12 @@ const Costumes: React.FC<CostumesProps> = ({ creators = [] }) => { // Add defaul
 
           {requests.length === 0 && (
             <div className="text-center py-12">
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">No costume requests yet</h3>
-              <p className="text-slate-500 mb-6">Create your first costume request</p>
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                No costume requests yet
+              </h3>
+              <p className="text-slate-500 mb-6">
+                Create your first costume request
+              </p>
               <button
                 onClick={() => setShowRequestModal(true)}
                 className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
@@ -239,10 +305,14 @@ const Costumes: React.FC<CostumesProps> = ({ creators = [] }) => { // Add defaul
             setSelectedRequest(null);
             setIsEditing(false);
           }}
-          onSave={isEditing && selectedRequest ? handleEditRequest : handleCreateRequest}
+          onSave={
+            isEditing && selectedRequest
+              ? handleEditRequest
+              : handleCreateRequest
+          }
           creators={creators}
           request={selectedRequest}
-          mode={isEditing ? 'edit' : 'add'}
+          mode={isEditing ? "edit" : "add"}
         />
       )}
 

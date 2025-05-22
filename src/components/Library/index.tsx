@@ -1,16 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Folder, FileText, Upload, ChevronLeft, Image, Video, File, Download, Trash2, Eye } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import FolderModal from './FolderModal';
-import UploadModal from './UploadModal';
-import RequestModal from './RequestModal';
-import ContentPreviewModal from './ContentPreviewModal';
-import DeleteConfirmationModal from './DeleteConfirmationModal';
-import RequestPreviewModal from './RequestPreviewModal';
-import type { Database } from '../../lib/database.types';
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Folder,
+  FileText,
+  Upload,
+  ChevronLeft,
+  Image,
+  Video,
+  File,
+  Download,
+  Trash2,
+  Eye,
+} from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import FolderModal from "./FolderModal";
+import UploadModal from "./UploadModal";
+import RequestModal from "./RequestModal";
+import ContentPreviewModal from "./ContentPreviewModal";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import RequestPreviewModal from "./RequestPreviewModal";
+import type { Database } from "../../lib/database.types";
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
+import axios from "axios";
 
-type ContentFolder = Database['public']['Tables']['folders']['Row'];
-type ContentItem = Database['public']['Tables']['content']['Row'];
+type ContentFolder = Database["public"]["Tables"]["folders"]["Row"];
+type ContentItem = Database["public"]["Tables"]["content"]["Row"];
 
 interface Creator {
   id: string;
@@ -24,12 +38,14 @@ interface ContentRequest {
   description: string;
   due_date: string;
   creator_id?: string;
-  status: 'pending' | 'completed' | 'rejected';
+  status: "pending" | "completed" | "rejected";
   created_at: string;
 }
 
 const Library = () => {
-  const [activeTab, setActiveTab] = useState<'library' | 'requests'>('library');
+  const { currentUser } = useAppSelector((state) => state.user);
+
+  const [activeTab, setActiveTab] = useState<"library" | "requests">("library");
   const [folders, setFolders] = useState<ContentFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [content, setContent] = useState<ContentItem[]>([]);
@@ -37,16 +53,21 @@ const Library = () => {
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
-  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
-  const [selectedRequest, setSelectedRequest] = useState<ContentRequest | null>(null);
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
+    null
+  );
+  const [selectedRequest, setSelectedRequest] = useState<ContentRequest | null>(
+    null
+  );
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     show: boolean;
     id?: string;
-    type: 'folder' | 'content' | 'request';
-  }>({ show: false, type: 'folder' });
+    type: "folder" | "content" | "request";
+  }>({ show: false, type: "folder" });
   const [creators, setCreators] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedFolderForRequest, setSelectedFolderForRequest] = useState<ContentFolder | null>(null);
+  const [selectedFolderForRequest, setSelectedFolderForRequest] =
+    useState<ContentFolder | null>(null);
 
   useEffect(() => {
     fetchFolders();
@@ -57,32 +78,43 @@ const Library = () => {
 
   const fetchCreators = async () => {
     try {
-      const { data, error } = await supabase
-        .from('creators')
-        .select('id, name, status')
-        .eq('status', 'active')
-        .order('name');
+      const requiredId =
+        currentUser.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_PUBLIC_BASE_URL
+        }/api/creator/get-creators/${requiredId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      console.log(response.data);
 
-      if (error) throw error;
-
-      setCreators(data || []);
+      setCreators(response.data.creators || []);
     } catch (error) {
-      console.error('Error fetching creators:', error);
+      console.error("Error fetching creators:", error);
     }
   };
+  useEffect(() => {
+    fetchCreators();
+  }, [currentUser]);
 
   const fetchFolders = async () => {
     try {
       const { data, error } = await supabase
-        .from('folders')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("folders")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       setFolders(data || []);
     } catch (error) {
-      console.error('Error fetching folders:', error);
+      console.error("Error fetching folders:", error);
     } finally {
       setIsLoading(false);
     }
@@ -91,56 +123,60 @@ const Library = () => {
   const fetchContent = async () => {
     try {
       const { data, error } = await supabase
-        .from('content')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("content")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       setContent(data || []);
     } catch (error) {
-      console.error('Error fetching content:', error);
+      console.error("Error fetching content:", error);
     }
   };
 
   const fetchRequests = async () => {
     try {
       const { data, error } = await supabase
-        .from('content_requests')
-        .select(`
+        .from("content_requests")
+        .select(
+          `
           *,
           creator:creators(name)
-        `)
-        .order('created_at', { ascending: false });
+        `
+        )
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       setRequests(data || []);
     } catch (error) {
-      console.error('Error fetching requests:', error);
+      console.error("Error fetching requests:", error);
     }
   };
 
-  const handleCreateFolder = async (folder: Omit<ContentFolder, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleCreateFolder = async (
+    folder: Omit<ContentFolder, "id" | "created_at" | "updated_at">
+  ) => {
     try {
       const { data, error } = await supabase
-        .from('folders')
+        .from("folders")
         .insert([folder])
         .select()
         .single();
 
       if (error) throw error;
 
-      setFolders(prev => [data, ...prev]);
+      setFolders((prev) => [data, ...prev]);
       setShowFolderModal(false);
     } catch (error) {
-      console.error('Error creating folder:', error);
+      console.error("Error creating folder:", error);
     }
   };
 
   const handleUploadContent = async (files: File[]) => {
     try {
-      const newContent = files.map(file => ({
+      const newContent = files.map((file) => ({
         name: file.name,
         type: file.type,
         url: URL.createObjectURL(file),
@@ -148,16 +184,16 @@ const Library = () => {
       }));
 
       const { data, error } = await supabase
-        .from('content')
+        .from("content")
         .insert(newContent)
         .select();
 
       if (error) throw error;
 
-      setContent(prev => [...data, ...prev]);
+      setContent((prev) => [...data, ...prev]);
       setShowUploadModal(false);
     } catch (error) {
-      console.error('Error uploading content:', error);
+      console.error("Error uploading content:", error);
     }
   };
 
@@ -169,55 +205,56 @@ const Library = () => {
   }) => {
     try {
       const { data, error } = await supabase
-        .from('content_requests')
-        .insert([{
-          title: request.title,
-          description: `${request.description}\n\nFolder: ${selectedFolderForRequest?.name || 'None'}`,
-          due_date: new Date(request.due_date).toISOString(),
-          creator_id: request.creator_id,
-        }])
+        .from("content_requests")
+        .insert([
+          {
+            title: request.title,
+            description: `${request.description}\n\nFolder: ${
+              selectedFolderForRequest?.name || "None"
+            }`,
+            due_date: new Date(request.due_date).toISOString(),
+            creator_id: request.creator_id,
+          },
+        ])
         .select()
         .single();
 
       if (error) throw error;
 
-      setRequests(prev => [data, ...prev]);
+      setRequests((prev) => [data, ...prev]);
       setShowRequestModal(false);
       setSelectedFolderForRequest(null);
     } catch (error) {
-      console.error('Error creating request:', error);
+      console.error("Error creating request:", error);
     }
   };
 
   const handleDeleteContent = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('content')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("content").delete().eq("id", id);
 
       if (error) throw error;
 
-      setContent(prev => prev.filter(item => item.id !== id));
+      setContent((prev) => prev.filter((item) => item.id !== id));
       setSelectedContent(null);
     } catch (error) {
-      console.error('Error deleting content:', error);
+      console.error("Error deleting content:", error);
     }
   };
 
   const handleDeleteRequest = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('content_requests')
+        .from("content_requests")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
 
-      setRequests(prev => prev.filter(request => request.id !== id));
+      setRequests((prev) => prev.filter((request) => request.id !== id));
       setSelectedRequest(null);
     } catch (error) {
-      console.error('Error deleting request:', error);
+      console.error("Error deleting request:", error);
     }
   };
 
@@ -226,7 +263,7 @@ const Library = () => {
     setDeleteConfirmation({
       show: true,
       id: folderId,
-      type: 'folder'
+      type: "folder",
     });
   };
 
@@ -234,46 +271,54 @@ const Library = () => {
     if (!deleteConfirmation.id) return;
 
     try {
-      if (deleteConfirmation.type === 'folder') {
+      if (deleteConfirmation.type === "folder") {
         const { error } = await supabase
-          .from('folders')
+          .from("folders")
           .delete()
-          .eq('id', deleteConfirmation.id);
+          .eq("id", deleteConfirmation.id);
 
         if (error) throw error;
 
-        setFolders(prev => prev.filter(f => f.id !== deleteConfirmation.id));
-        setContent(prev => prev.filter(c => c.folder_id !== deleteConfirmation.id));
-      } else if (deleteConfirmation.type === 'content') {
+        setFolders((prev) =>
+          prev.filter((f) => f.id !== deleteConfirmation.id)
+        );
+        setContent((prev) =>
+          prev.filter((c) => c.folder_id !== deleteConfirmation.id)
+        );
+      } else if (deleteConfirmation.type === "content") {
         const { error } = await supabase
-          .from('content')
+          .from("content")
           .delete()
-          .eq('id', deleteConfirmation.id);
+          .eq("id", deleteConfirmation.id);
 
         if (error) throw error;
 
-        setContent(prev => prev.filter(c => c.id !== deleteConfirmation.id));
+        setContent((prev) =>
+          prev.filter((c) => c.id !== deleteConfirmation.id)
+        );
         setSelectedContent(null);
       } else {
         const { error } = await supabase
-          .from('content_requests')
+          .from("content_requests")
           .delete()
-          .eq('id', deleteConfirmation.id);
+          .eq("id", deleteConfirmation.id);
 
         if (error) throw error;
 
-        setRequests(prev => prev.filter(r => r.id !== deleteConfirmation.id));
+        setRequests((prev) =>
+          prev.filter((r) => r.id !== deleteConfirmation.id)
+        );
         setSelectedRequest(null);
       }
     } catch (error) {
-      console.error('Error deleting:', error);
+      console.error("Error deleting:", error);
     } finally {
-      setDeleteConfirmation({ show: false, type: 'folder' });
+      setDeleteConfirmation({ show: false, type: "folder" });
     }
   };
 
   const handleDownloadContent = (item: ContentItem) => {
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = item.url;
     link.download = item.name;
     document.body.appendChild(link);
@@ -287,16 +332,16 @@ const Library = () => {
   };
 
   const getCurrentFolder = () => {
-    return folders.find(folder => folder.id === selectedFolder);
+    return folders.find((folder) => folder.id === selectedFolder);
   };
 
   const getFolderContent = () => {
-    return content.filter(item => item.folder_id === selectedFolder);
+    return content.filter((item) => item.folder_id === selectedFolder);
   };
 
   const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) return Image;
-    if (type.startsWith('video/')) return Video;
+    if (type.startsWith("image/")) return Image;
+    if (type.startsWith("video/")) return Video;
     return File;
   };
 
@@ -342,17 +387,25 @@ const Library = () => {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-slate-800 mb-2">{currentFolder?.name}</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-2">
+              {currentFolder?.name}
+            </h2>
             {currentFolder?.description && (
-              <p className="text-sm text-slate-500 mb-6">{currentFolder.description}</p>
+              <p className="text-sm text-slate-500 mb-6">
+                {currentFolder.description}
+              </p>
             )}
           </div>
 
           {folderContent.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl">
               <Upload className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">No content yet</h3>
-              <p className="text-slate-500 mb-6">Upload your first file to this folder</p>
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                No content yet
+              </h3>
+              <p className="text-slate-500 mb-6">
+                Upload your first file to this folder
+              </p>
               <button
                 onClick={() => setShowUploadModal(true)}
                 className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
@@ -362,7 +415,7 @@ const Library = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {folderContent.map(item => {
+              {folderContent.map((item) => {
                 const FileIcon = getFileIcon(item.type);
                 return (
                   <div
@@ -372,7 +425,9 @@ const Library = () => {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <FileIcon className="h-5 w-5 text-blue-500 flex-shrink-0" />
-                        <h3 className="text-sm font-medium text-slate-800 truncate">{item.name}</h3>
+                        <h3 className="text-sm font-medium text-slate-800 truncate">
+                          {item.name}
+                        </h3>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2">
                         <button
@@ -396,7 +451,8 @@ const Library = () => {
                       </div>
                     </div>
                     <p className="text-xs text-slate-500 truncate">
-                      Added {new Date(item.created_at || '').toLocaleDateString()}
+                      Added{" "}
+                      {new Date(item.created_at || "").toLocaleDateString()}
                     </p>
                   </div>
                 );
@@ -422,8 +478,12 @@ const Library = () => {
         {folders.length === 0 ? (
           <div className="text-center py-12">
             <Folder className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">No folders yet</h3>
-            <p className="text-slate-500 mb-6">Create your first folder to organize your content</p>
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">
+              No folders yet
+            </h3>
+            <p className="text-slate-500 mb-6">
+              Create your first folder to organize your content
+            </p>
             <button
               onClick={() => setShowFolderModal(true)}
               className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
@@ -433,20 +493,24 @@ const Library = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {folders.map(folder => {
-              const folderContent = content.filter(item => item.folder_id === folder.id);
+            {folders.map((folder) => {
+              const folderContent = content.filter(
+                (item) => item.folder_id === folder.id
+              );
               return (
                 <div
                   key={folder.id}
                   className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-500 transition-colors group"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div 
+                    <div
                       onClick={() => setSelectedFolder(folder.id)}
                       className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
                     >
                       <Folder className="h-5 w-5 text-blue-500 flex-shrink-0" />
-                      <h3 className="text-lg font-medium text-slate-800 truncate">{folder.name}</h3>
+                      <h3 className="text-lg font-medium text-slate-800 truncate">
+                        {folder.name}
+                      </h3>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -466,15 +530,18 @@ const Library = () => {
                       </button>
                     </div>
                   </div>
-                  <div 
+                  <div
                     onClick={() => setSelectedFolder(folder.id)}
                     className="cursor-pointer"
                   >
                     {folder.description && (
-                      <p className="text-sm text-slate-500 mb-2 line-clamp-2">{folder.description}</p>
+                      <p className="text-sm text-slate-500 mb-2 line-clamp-2">
+                        {folder.description}
+                      </p>
                     )}
                     <p className="text-xs text-slate-400">
-                      {folderContent.length} {folderContent.length === 1 ? 'item' : 'items'}
+                      {folderContent.length}{" "}
+                      {folderContent.length === 1 ? "item" : "items"}
                     </p>
                   </div>
                 </div>
@@ -493,22 +560,22 @@ const Library = () => {
         <div className="mt-4 border-b border-slate-200">
           <nav className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('library')}
+              onClick={() => setActiveTab("library")}
               className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 text-sm font-medium ${
-                activeTab === 'library'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                activeTab === "library"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
               }`}
             >
               <Folder className="h-4 w-4" />
               Library
             </button>
             <button
-              onClick={() => setActiveTab('requests')}
+              onClick={() => setActiveTab("requests")}
               className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 text-sm font-medium ${
-                activeTab === 'requests'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                activeTab === "requests"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
               }`}
             >
               <FileText className="h-4 w-4" />
@@ -518,7 +585,9 @@ const Library = () => {
         </div>
       </div>
 
-      {activeTab === 'library' ? renderLibraryContent() : (
+      {activeTab === "library" ? (
+        renderLibraryContent()
+      ) : (
         <div className="space-y-6">
           <div className="flex justify-end">
             <button
@@ -533,8 +602,12 @@ const Library = () => {
           {requests.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">No content requests</h3>
-              <p className="text-slate-500 mb-6">Create your first content request</p>
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                No content requests
+              </h3>
+              <p className="text-slate-500 mb-6">
+                Create your first content request
+              </p>
               <button
                 onClick={() => setShowRequestModal(true)}
                 className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
@@ -548,38 +621,55 @@ const Library = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200">
-                      <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">Title</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">Creator</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">Due Date</th>
-                      <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">Status</th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">
+                        Title
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">
+                        Creator
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">
+                        Due Date
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-medium text-slate-500">
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {requests.map(request => (
-                      <tr 
-                        key={request.id} 
+                    {requests.map((request) => (
+                      <tr
+                        key={request.id}
                         className="hover:bg-slate-50 cursor-pointer"
                         onClick={() => setSelectedRequest(request)}
                       >
                         <td className="px-6 py-4">
                           <div>
-                            <h4 className="text-sm font-medium text-slate-800">{request.title}</h4>
-                            <p className="text-sm text-slate-500">{request.description}</p>
+                            <h4 className="text-sm font-medium text-slate-800">
+                              {request.title}
+                            </h4>
+                            <p className="text-sm text-slate-500">
+                              {request.description}
+                            </p>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-600">{request.creator?.name || '-'}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          {request.creator?.name || "-"}
+                        </td>
                         <td className="px-6 py-4 text-sm text-slate-600">
                           {new Date(request.due_date).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            request.status === 'pending'
-                              ? 'bg-yellow-50 text-yellow-800'
-                              : request.status === 'completed'
-                              ? 'bg-green-50 text-green-800'
-                              : 'bg-red-50 text-red-800'
-                          }`}>
-                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              request.status === "pending"
+                                ? "bg-yellow-50 text-yellow-800"
+                                : request.status === "completed"
+                                ? "bg-green-50 text-green-800"
+                                : "bg-red-50 text-red-800"
+                            }`}
+                          >
+                            {request.status.charAt(0).toUpperCase() +
+                              request.status.slice(1)}
                           </span>
                         </td>
                       </tr>
@@ -636,13 +726,17 @@ const Library = () => {
 
       {deleteConfirmation.show && (
         <DeleteConfirmationModal
-          title={deleteConfirmation.type === 'folder' ? 'Delete Folder' : 'Delete Content'}
-          message={
-            deleteConfirmation.type === 'folder'
-              ? 'Are you sure you want to delete this folder and all its contents? This action cannot be undone.'
-              : 'Are you sure you want to delete this content? This action cannot be undone.'
+          title={
+            deleteConfirmation.type === "folder"
+              ? "Delete Folder"
+              : "Delete Content"
           }
-          onClose={() => setDeleteConfirmation({ show: false, type: 'folder' })}
+          message={
+            deleteConfirmation.type === "folder"
+              ? "Are you sure you want to delete this folder and all its contents? This action cannot be undone."
+              : "Are you sure you want to delete this content? This action cannot be undone."
+          }
+          onClose={() => setDeleteConfirmation({ show: false, type: "folder" })}
           onConfirm={handleConfirmDelete}
         />
       )}
