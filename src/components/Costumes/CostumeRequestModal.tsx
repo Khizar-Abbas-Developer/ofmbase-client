@@ -98,6 +98,7 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
           },
         }
       );
+      refreshRequests();
       toast.success(
         mode === "edit"
           ? "Costume request updated successfully"
