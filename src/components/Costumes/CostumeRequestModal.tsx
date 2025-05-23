@@ -30,6 +30,7 @@ interface CostumeRequestModalProps {
   creators: Creator[];
   request?: CostumeRequest | null;
   mode?: "add" | "edit";
+  refreshRequests: () => void;
 }
 const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
   onClose,
@@ -37,6 +38,7 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
   creators = [],
   request,
   mode = "add",
+  refreshRequests,
 }) => {
   const { currentUser } = useAppSelector((state) => state.user);
 
@@ -107,7 +109,35 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
   const handleUpdateRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log(formData);
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser?.id
+          : currentUser?.ownerId;
+      const creator = creators.find((i) => i._id === formData.creatorId);
+      if (!creator) {
+        toast.error("Creator not found");
+        return;
+      }
+      const newFormData = {
+        ...formData,
+        creatorName: creator ? creator.name : "", // fallback to empty string if not found
+        ownerId: requiredId,
+      };
+
+      await axios.put(
+        `${URL}/api/content-request/update-request/${request?._id}`,
+        newFormData,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+            // Don't set Content-Type manually — Axios does it automatically for JSON
+          },
+        }
+      );
+
+      refreshRequests();
+      toast.success("Costume request updated successfully");
+      onClose();
     } catch (error) {
       console.log(error);
     }

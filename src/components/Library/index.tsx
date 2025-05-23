@@ -22,6 +22,7 @@ import RequestPreviewModal from "./RequestPreviewModal";
 import type { Database } from "../../lib/database.types";
 import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 import axios from "axios";
+import toast from "react-hot-toast";
 
 type ContentFolder = Database["public"]["Tables"]["folders"]["Row"];
 type ContentItem = Database["public"]["Tables"]["content"]["Row"];
@@ -149,22 +150,11 @@ const Library = () => {
         }
       );
       console.log(response);
-
-      // const { data, error } = await supabase
-      //   .from("content_requests")
-      //   .select(
-      //     `
-      //     *,
-      //     creator:creators(name)
-      //   `
-      //   )
-      //   .order("created_at", { ascending: false });
-
-      // if (error) throw error;
-
       setRequests(response.data || []);
     } catch (error) {
       console.error("Error fetching requests:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -258,6 +248,17 @@ const Library = () => {
   const handleDeleteRequest = async (id: string) => {
     try {
       console.log(id);
+      const response = await axios.delete(
+        `${URL}/api/content-request/delete-request/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      fetchRequests();
+      setSelectedRequest(null);
+      toast.success("Request deleted successfully");
     } catch (error) {
       console.error("Error deleting request:", error);
     }
@@ -612,23 +613,7 @@ const Library = () => {
             </button>
           </div>
 
-          {requests.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">
-                No content requests
-              </h3>
-              <p className="text-slate-500 mb-6">
-                Create your first content request
-              </p>
-              <button
-                onClick={() => setShowRequestModal(true)}
-                className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
-              >
-                Create Request
-              </button>
-            </div>
-          ) : (
+          {requests && requests.length > 0 ? (
             <div className="bg-white rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -651,7 +636,7 @@ const Library = () => {
                   <tbody className="divide-y divide-slate-100">
                     {requests.map((request) => (
                       <tr
-                        key={request.id}
+                        key={request._id}
                         className="hover:bg-slate-50 cursor-pointer"
                         onClick={() => setSelectedRequest(request)}
                       >
@@ -690,6 +675,22 @@ const Library = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <FileText className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                No content requests
+              </h3>
+              <p className="text-slate-500 mb-6">
+                Create your first content request
+              </p>
+              <button
+                onClick={() => setShowRequestModal(true)}
+                className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+              >
+                Create Request
+              </button>
             </div>
           )}
         </div>
@@ -734,6 +735,7 @@ const Library = () => {
           onSave={handleCreateRequest}
           creators={creators}
           folder={selectedFolderForRequest}
+          refreshRequests={fetchRequests}
         />
       )}
 

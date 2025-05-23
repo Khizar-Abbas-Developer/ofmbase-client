@@ -15,6 +15,7 @@ interface RequestModalProps {
   }) => void;
   creators: { _id: string; name: string }[];
   folder?: { id: string; name: string } | null;
+  refreshRequests: () => void;
 }
 
 const RequestModal: React.FC<RequestModalProps> = ({
@@ -22,6 +23,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
   // onSave,
   creators,
   folder,
+  refreshRequests,
 }) => {
   const { currentUser } = useAppSelector((state) => state.user);
 
@@ -92,7 +94,9 @@ const RequestModal: React.FC<RequestModalProps> = ({
           return publicUrl;
         })
       );
-
+      refreshRequests();
+      onClose();
+      toast.success("Files uploaded successfully");
       // You can continue with saving contentRequest to MongoDB here...
       // (like your current logic)
     } catch (error) {

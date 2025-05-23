@@ -36,7 +36,7 @@ const RequestPreviewModal: React.FC<RequestPreviewModalProps> = ({
         <img
           src={url}
           alt="Reference content"
-          className="max-h-48 w-full object-cover rounded-lg"
+          className="max-h-auto w-full object-cover rounded-lg"
         />
       );
     }

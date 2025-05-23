@@ -6,6 +6,7 @@ import CostumeDetailModal from "./CostumeDetailModal";
 import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 
 import axios from "axios";
+import toast from "react-hot-toast";
 
 interface CostumeRequest {
   id: string;
@@ -76,8 +77,6 @@ const Costumes: React.FC<CostumesProps> = () => {
         currentUser.ownerId === "Agency Owner itself"
           ? currentUser.id
           : currentUser.ownerId;
-      console.log(requierdId);
-
       const response = await axios.get(
         `${URL}/api/content-request/get-requests-detail/${requierdId}`,
         {
@@ -86,8 +85,6 @@ const Costumes: React.FC<CostumesProps> = () => {
           },
         }
       );
-      console.log(response.data);
-
       setRequests(response.data || []);
     } catch (error) {
       console.error("Error fetching costume requests:", error);
@@ -160,6 +157,18 @@ const Costumes: React.FC<CostumesProps> = () => {
   const handleDeleteRequest = async (id: string) => {
     try {
       console.log(id);
+      const response = await axios.delete(
+        `${URL}/api/content-request/delete-request/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      fetchRequests();
+      setShowDetailModal(false);
+      setSelectedRequest(null);
+      toast.success("Request deleted successfully");
     } catch (error) {
       console.error("Error deleting costume request:", error);
     }
@@ -240,15 +249,15 @@ const Costumes: React.FC<CostumesProps> = () => {
                           : "bg-red-50 text-red-800"
                       }`}
                     >
-                      {/* {request.status.charAt(0).toUpperCase() +
-                        request.status.slice(1)} */}
+                      {request.status.charAt(0).toUpperCase() +
+                        request.status.slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">
                     ${request.paymentAmount}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">
-                    {new Date(request.createdAt).toLocaleDateString()}
+                    {/* {new Date(request.createdAt).toLocaleDateString()} */}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end items-center gap-2">
@@ -309,6 +318,7 @@ const Costumes: React.FC<CostumesProps> = () => {
           creators={creators}
           request={selectedRequest}
           mode={isEditing ? "edit" : "add"}
+          refreshRequests={fetchRequests}
         />
       )}
 
