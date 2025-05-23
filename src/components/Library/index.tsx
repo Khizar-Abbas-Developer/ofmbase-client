@@ -149,7 +149,6 @@ const Library = () => {
           },
         }
       );
-      console.log(response);
       setRequests(response.data || []);
     } catch (error) {
       console.error("Error fetching requests:", error);
@@ -247,15 +246,11 @@ const Library = () => {
 
   const handleDeleteRequest = async (id: string) => {
     try {
-      console.log(id);
-      const response = await axios.delete(
-        `${URL}/api/content-request/delete-request/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${currentUser?.token}`,
-          },
-        }
-      );
+      await axios.delete(`${URL}/api/content-request/delete-request/${id}`, {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+        },
+      });
       fetchRequests();
       setSelectedRequest(null);
       toast.success("Request deleted successfully");
@@ -272,14 +267,14 @@ const Library = () => {
       type: "folder",
     });
   };
-  console.log("Folders:", folders);
-  console.log("Selected Folder:", selectedFolder);
-  console.log("Content:", content);
-  console.log("Requests:", requests);
-  console.log("Selected Content:", selectedContent);
-  console.log("Selected Request:", selectedRequest);
-  console.log("Creators:", creators);
-  console.log("Selected Folder For Request:", selectedFolderForRequest);
+  // console.log("Folders:", folders);
+  // console.log("Selected Folder:", selectedFolder);
+  // console.log("Content:", content);
+  // console.log("Requests:", requests);
+  // console.log("Selected Content:", selectedContent);
+  // console.log("Selected Request:", selectedRequest);
+  // console.log("Creators:", creators);
+  // console.log("Selected Folder For Request:", selectedFolderForRequest);
 
   const handleConfirmDelete = async () => {
     if (!deleteConfirmation.id) return;
