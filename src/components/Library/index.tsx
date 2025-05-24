@@ -224,13 +224,12 @@ const Library = () => {
   const handleUploadContent = async (files: File[]) => {
     try {
       const creator = creators.find((c) => c.email === currentUser.email);
-      const creatorId = creator._id;
-      const creatorName = creator?.name;
-
       if (!creator) {
-        toast.error("Creator not found");
+        toast.error("Creator can only upload the content");
         return;
       }
+      const creatorId = creator._id;
+      const creatorName = creator?.name;
 
       const ownerId =
         currentUser.ownerId === "Agency Owner itself"
@@ -599,8 +598,6 @@ const Library = () => {
               const folderContent = content.filter(
                 (item) => item.folder_id === folder.id
               );
-              console.log(folderContent);
-
               return (
                 <div
                   key={folder._id}
