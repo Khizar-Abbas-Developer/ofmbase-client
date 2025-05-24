@@ -51,8 +51,14 @@ const Library = () => {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [content, setContent] = useState<ContentItem[]>([]);
   const [requests, setRequests] = useState<ContentRequest[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [folderContentCounts, setFolderContentCounts] = useState<
+    Record<string, number>
+  >({});
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
     null
@@ -72,11 +78,23 @@ const Library = () => {
 
   useEffect(() => {
     fetchFolders();
-    fetchContent();
     fetchCreators();
     fetchRequests();
   }, []);
+  useEffect(() => {
+    if (creators.length > 0 && currentUser.email) {
+      const creator = creators.find((c) => c.email === currentUser.email);
+      if (creator?._id) {
+        fetchContent();
+      }
+    }
+  }, [creators, currentUser.email]);
 
+  useEffect(() => {
+    if (selectedFolder) {
+      fetchContent();
+    }
+  }, [selectedFolder]);
   const fetchCreators = async () => {
     try {
       const requiredId =
@@ -105,14 +123,19 @@ const Library = () => {
 
   const fetchFolders = async () => {
     try {
-      const { data, error } = await supabase
-        .from("folders")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      setFolders(data || []);
+      const requiredId =
+        currentUser.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const response = await axios.get(
+        `${URL}/api/folders//get-folder/${requiredId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      setFolders(response.data || []);
     } catch (error) {
       console.error("Error fetching folders:", error);
     } finally {
@@ -122,14 +145,27 @@ const Library = () => {
 
   const fetchContent = async () => {
     try {
-      const { data, error } = await supabase
-        .from("content")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const creator = creators.find((c) => c.email === currentUser.email);
+      const creatorId = creator?._id;
 
-      if (error) throw error;
+      if (!creatorId) return;
 
-      setContent(data || []);
+      const response = await axios.get(
+        `${URL}/api/content/get-content/${creatorId}`
+      );
+
+      const contentItems = response.data || [];
+
+      setContent(contentItems);
+
+      const counts: Record<string, number> = {};
+      contentItems.forEach((item: any) => {
+        if (item.folderId) {
+          counts[item.folderId] = (counts[item.folderId] || 0) + 1;
+        }
+      });
+
+      setFolderContentCounts(counts);
     } catch (error) {
       console.error("Error fetching content:", error);
     }
@@ -157,19 +193,28 @@ const Library = () => {
     }
   };
 
-  const handleCreateFolder = async (
-    folder: Omit<ContentFolder, "id" | "created_at" | "updated_at">
-  ) => {
+  const handleCreateFolder = async (folder: {
+    name: string;
+    description?: string;
+  }) => {
     try {
-      const { data, error } = await supabase
-        .from("folders")
-        .insert([folder])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setFolders((prev) => [data, ...prev]);
+      const userId = currentUser.id;
+      const requiredId =
+        currentUser.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const dataToSend = { ...folder, creator: userId, ownerId: requiredId };
+      const response = await axios.post(
+        `${URL}/api/folders/create-folder`,
+        dataToSend,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      fetchFolders();
+      // setFolders((prev) => [data, ...prev]);
       setShowFolderModal(false);
     } catch (error) {
       console.error("Error creating folder:", error);
@@ -178,24 +223,78 @@ const Library = () => {
 
   const handleUploadContent = async (files: File[]) => {
     try {
-      const newContent = files.map((file) => ({
-        name: file.name,
-        type: file.type,
-        url: URL.createObjectURL(file),
-        folder_id: selectedFolder,
-      }));
+      const creator = creators.find((c) => c.email === currentUser.email);
+      const creatorId = creator._id;
+      const creatorName = creator?.name;
 
-      const { data, error } = await supabase
-        .from("content")
-        .insert(newContent)
-        .select();
+      if (!creator) {
+        toast.error("Creator not found");
+        return;
+      }
 
-      if (error) throw error;
+      const ownerId =
+        currentUser.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
 
-      setContent((prev) => [...data, ...prev]);
+      const totalSize = files.reduce((acc, file) => acc + file.size, 0);
+      let uploadedBytes = 0;
+
+      const media_urls = await Promise.all(
+        files.map(async (file) => {
+          const formData = new FormData();
+          formData.append("creatorId", creatorId);
+          formData.append("creatorName", creatorName);
+          formData.append("ownerId", ownerId);
+          formData.append("folderId", selectedFolder);
+          formData.append("file", file);
+          formData.append("fileName", file.name);
+
+          // Determine type based on file MIME
+          const mimeType = file.type;
+          let type = "";
+
+          if (mimeType.startsWith("video/")) {
+            type = "video/";
+          } else if (mimeType.startsWith("image/")) {
+            type = "image/";
+          }
+
+          // Add the detected type
+          formData.append("type", type);
+
+          const response = await axios.post(
+            `${URL}/api/content/send-request`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+              onUploadProgress: (progressEvent) => {
+                const currentUploaded = progressEvent.loaded;
+                uploadedBytes += currentUploaded;
+                const progress = Math.min(
+                  (uploadedBytes / totalSize) * 100,
+                  100
+                );
+                setUploadProgress(progress);
+              },
+            }
+          );
+
+          const { publicUrl } = response.data;
+          return publicUrl;
+        })
+      );
+      fetchContent();
       setShowUploadModal(false);
+      toast.success("Files uploaded successfully");
+      // refreshContent(); // Optional: refetch or update state
     } catch (error) {
       console.error("Error uploading content:", error);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -233,12 +332,14 @@ const Library = () => {
 
   const handleDeleteContent = async (id: string) => {
     try {
-      const { error } = await supabase.from("content").delete().eq("id", id);
+      console.log(id);
 
-      if (error) throw error;
+      const response = await axios.delete(
+        `${URL}/api/content/delete-content/${id}`
+      );
+      console.log(response);
 
-      setContent((prev) => prev.filter((item) => item.id !== id));
-      setSelectedContent(null);
+      fetchContent();
     } catch (error) {
       console.error("Error deleting content:", error);
     }
@@ -267,33 +368,27 @@ const Library = () => {
       type: "folder",
     });
   };
-  // console.log("Folders:", folders);
-  // console.log("Selected Folder:", selectedFolder);
-  // console.log("Content:", content);
-  // console.log("Requests:", requests);
-  // console.log("Selected Content:", selectedContent);
-  // console.log("Selected Request:", selectedRequest);
-  // console.log("Creators:", creators);
-  // console.log("Selected Folder For Request:", selectedFolderForRequest);
 
   const handleConfirmDelete = async () => {
-    if (!deleteConfirmation.id) return;
-
     try {
       if (deleteConfirmation.type === "folder") {
-        const { error } = await supabase
-          .from("folders")
-          .delete()
-          .eq("id", deleteConfirmation.id);
+        if (!deleteConfirmation.id) return;
+        // const { error } = await supabase
+        //   .from("folders")
+        //   .delete()
+        //   .eq("id", deleteConfirmation.id);
 
-        if (error) throw error;
-
-        setFolders((prev) =>
-          prev.filter((f) => f.id !== deleteConfirmation.id)
+        // if (error) throw error;
+        const response = await axios.delete(
+          `${URL}/api/folders/delete-folder/${deleteConfirmation.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${currentUser?.token}`,
+            },
+          }
         );
-        setContent((prev) =>
-          prev.filter((c) => c.folder_id !== deleteConfirmation.id)
-        );
+        fetchFolders();
+        setSelectedFolder(null);
       } else if (deleteConfirmation.type === "content") {
         const { error } = await supabase
           .from("content")
@@ -345,7 +440,7 @@ const Library = () => {
   };
 
   const getFolderContent = () => {
-    return content.filter((item) => item.folder_id === selectedFolder);
+    return content.filter((item) => item.folderId === selectedFolder);
   };
 
   const getFileIcon = (type: string) => {
@@ -353,7 +448,6 @@ const Library = () => {
     if (type.startsWith("video/")) return Video;
     return File;
   };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -428,14 +522,14 @@ const Library = () => {
                 const FileIcon = getFileIcon(item.type);
                 return (
                   <div
-                    key={item.id}
+                    key={item._id}
                     className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-500 transition-colors group"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <FileIcon className="h-5 w-5 text-blue-500 flex-shrink-0" />
                         <h3 className="text-sm font-medium text-slate-800 truncate">
-                          {item.name}
+                          {item.fileName}
                         </h3>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2">
@@ -452,7 +546,7 @@ const Library = () => {
                           <Download className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteContent(item.id)}
+                          onClick={() => handleDeleteContent(item._id)}
                           className="p-1 text-red-400 hover:text-red-600 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -461,7 +555,7 @@ const Library = () => {
                     </div>
                     <p className="text-xs text-slate-500 truncate">
                       Added{" "}
-                      {new Date(item.created_at || "").toLocaleDateString()}
+                      {new Date(item.createdAt || "").toLocaleDateString()}
                     </p>
                   </div>
                 );
@@ -471,7 +565,6 @@ const Library = () => {
         </div>
       );
     }
-
     return (
       <div className="space-y-6">
         <div className="flex justify-end">
@@ -506,16 +599,16 @@ const Library = () => {
               const folderContent = content.filter(
                 (item) => item.folder_id === folder.id
               );
+              console.log(folderContent);
+
               return (
                 <div
-                  key={folder.id}
+                  key={folder._id}
+                  onClick={() => setSelectedFolder(folder._id)}
                   className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-500 transition-colors group"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div
-                      onClick={() => setSelectedFolder(folder.id)}
-                      className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
-                    >
+                    <div className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
                       <Folder className="h-5 w-5 text-blue-500 flex-shrink-0" />
                       <h3 className="text-lg font-medium text-slate-800 truncate">
                         {folder.name}
@@ -532,7 +625,7 @@ const Library = () => {
                         <FileText className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={(e) => handleDeleteFolder(e, folder.id)}
+                        onClick={(e) => handleDeleteFolder(e, folder._id)}
                         className="p-2 text-slate-400 hover:text-red-600 transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -548,10 +641,7 @@ const Library = () => {
                         {folder.description}
                       </p>
                     )}
-                    <p className="text-xs text-slate-400">
-                      {folderContent.length}{" "}
-                      {folderContent.length === 1 ? "item" : "items"}
-                    </p>
+                    {folderContentCounts[folder._id] || 0} items
                   </div>
                 </div>
               );

@@ -1,13 +1,16 @@
-import React from 'react';
-import { X, Download, Trash2 } from 'lucide-react';
+import React from "react";
+import { X, Download, Trash2 } from "lucide-react";
+
+interface RawContent {
+  _id: string;
+  fileName: string;
+  type: string;
+  media_urls: string[];
+  creatorName: string;
+}
 
 interface ContentPreviewModalProps {
-  content: {
-    id: string;
-    name: string;
-    type: string;
-    url: string;
-  };
+  content: RawContent;
   onClose: () => void;
   onDelete: (id: string) => void;
 }
@@ -17,35 +20,54 @@ const ContentPreviewModal: React.FC<ContentPreviewModalProps> = ({
   onClose,
   onDelete,
 }) => {
+  const { _id, fileName, type, media_urls } = content;
+  const fileUrl = media_urls[0]; // Use first media URL
+
   const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = content.url;
-    link.download = content.name;
+    const link = document.createElement("a");
+    link.href = fileUrl;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const renderPreview = () => {
-    if (content.type.startsWith('image/')) {
+    if (type.startsWith("image/")) {
       return (
         <img
-          src={content.url}
-          alt={content.name}
+          src={fileUrl}
+          alt={fileName}
           className="max-h-[60vh] object-contain mx-auto rounded-lg"
         />
       );
     }
 
-    if (content.type.startsWith('video/')) {
+    if (type.startsWith("video/")) {
       return (
         <video
-          src={content.url}
+          src={fileUrl}
           controls
           className="max-h-[60vh] w-full rounded-lg"
         >
           Your browser does not support the video tag.
         </video>
+      );
+    }
+
+    if (
+      fileName.endsWith(".pdf") ||
+      fileName.endsWith(".doc") ||
+      fileName.endsWith(".docx") ||
+      fileName.endsWith(".ppt") ||
+      fileName.endsWith(".pptx")
+    ) {
+      return (
+        <iframe
+          src={fileUrl}
+          title={fileName}
+          className="w-full h-[60vh] rounded-lg"
+        ></iframe>
       );
     }
 
@@ -62,7 +84,9 @@ const ContentPreviewModal: React.FC<ContentPreviewModalProps> = ({
       <div className="relative min-h-screen flex items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl max-w-4xl w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800 truncate">{content.name}</h2>
+            <h2 className="text-xl font-semibold text-slate-800 truncate">
+              {fileName}
+            </h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-150"
@@ -71,13 +95,11 @@ const ContentPreviewModal: React.FC<ContentPreviewModalProps> = ({
             </button>
           </div>
 
-          <div className="p-6">
-            {renderPreview()}
-          </div>
+          <div className="p-6">{renderPreview()}</div>
 
           <div className="flex items-center justify-end gap-4 px-6 py-4 border-t border-slate-200">
             <button
-              onClick={() => onDelete(content.id)}
+              onClick={() => onDelete(_id)}
               className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors duration-150"
             >
               <Trash2 className="h-5 w-5" />
