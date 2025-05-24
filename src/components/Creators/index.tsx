@@ -71,6 +71,7 @@ const Creators: React.FC<CreatorsProps> = ({ onAdd, onUpdate, onDelete }) => {
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     try {
+      setLoading(true);
       const requiredId =
         currentUser?.ownerId === "Agency Owner itself"
           ? currentUser.id
@@ -83,6 +84,7 @@ const Creators: React.FC<CreatorsProps> = ({ onAdd, onUpdate, onDelete }) => {
       fetchCreators();
     } catch (error) {
       console.log(error);
+      setLoading(false)
     }
   };
   return (

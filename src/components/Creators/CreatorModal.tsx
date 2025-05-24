@@ -5,6 +5,7 @@ import ErrorDialog from "../ErrorDialog";
 import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 import axios from "axios";
 import toast from "react-hot-toast";
+import { ClipLoader } from "react-spinners";
 
 interface CreatorModalProps {
   mode: "add" | "edit" | "view";
@@ -93,7 +94,6 @@ const CreatorModal: React.FC<CreatorModalProps> = ({
         onClose();
       }, 500);
     } catch (error: any) {
-      console.log(error);
       toast.error(error.response.data.message);
       setError(error.response.data.errors[0].message);
     } finally {
@@ -127,6 +127,7 @@ const CreatorModal: React.FC<CreatorModalProps> = ({
   const handleEditCreator = async (e) => {
     e.preventDefault();
     try {
+      setIsLoading(true);
       const dataToSend = {
         email: formData.email,
         name: formData.name,
@@ -159,6 +160,8 @@ const CreatorModal: React.FC<CreatorModalProps> = ({
       }, 500);
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -427,11 +430,16 @@ const CreatorModal: React.FC<CreatorModalProps> = ({
                   disabled={isLoading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150 disabled:opacity-50"
                 >
-                  {isLoading
-                    ? "Creating..."
-                    : mode === "add"
-                    ? "Add Creator"
-                    : "Save Changes"}
+                  {isLoading ? (
+                    <div className="flex justify-center items-center gap-2">
+                      <p>{mode === "add" ? "Creating" : "Saving"}</p>
+                      <ClipLoader size={14} />
+                    </div>
+                  ) : mode === "add" ? (
+                    "Add Creator"
+                  ) : (
+                    "Save Changes"
+                  )}
                 </button>
               </div>
             )}
