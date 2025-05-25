@@ -4,6 +4,7 @@ import axios from "axios";
 
 import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 import toast from "react-hot-toast";
+import { ClipLoader } from "react-spinners";
 
 interface Role {
   id?: string;
@@ -99,6 +100,7 @@ const PermissionsSettings = () => {
 
   const handleDeleteRole = async (roleId?: string, roleName?: string) => {
     try {
+      setIsLoading(true);
       if (roleId) {
         await axios.delete(`${URL}/api/role/delete-role/${roleId}`, {
           headers: {
@@ -117,6 +119,8 @@ const PermissionsSettings = () => {
     } catch (error) {
       console.error("Error deleting role:", error);
       setError("Failed to delete role");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -136,6 +140,7 @@ const PermissionsSettings = () => {
 
   const handleSavePermissions = async () => {
     try {
+      setIsLoading(true);
       setError(null);
 
       for (const role of roles) {
@@ -167,6 +172,8 @@ const PermissionsSettings = () => {
     } catch (error) {
       console.error("Error saving permissions:", error);
       setError("Failed to save permissions");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -334,9 +341,17 @@ const PermissionsSettings = () => {
       <div className="mt-6 flex justify-end">
         <button
           onClick={handleSavePermissions}
+          disabled={isLoading}
           className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
         >
-          Save Permissions
+          {isLoading ? (
+            <div className="flex justify-center items-center gap-2">
+              <p>{"Save Permissions"}</p>
+              <ClipLoader size={14} />
+            </div>
+          ) : (
+            "Save Permissions"
+          )}
         </button>
       </div>
     </div>

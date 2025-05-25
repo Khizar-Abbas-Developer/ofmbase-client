@@ -6,6 +6,7 @@ import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 
 import axios from "axios";
 import toast from "react-hot-toast";
+import { ClipLoader } from "react-spinners";
 
 interface Role {
   id: string;
@@ -42,7 +43,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   });
 
   const [roles, setRoles] = useState<Role[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,6 +61,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     };
 
     try {
+      setIsLoading(true);
       const requiredId =
         currentUser.ownerId === "Agency Owner itself"
           ? currentUser.id
@@ -92,9 +94,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
       toast.success(response.data.message);
     } catch (error: any) {
       toast.error(error.response.data.message);
-      console.log(error);
-
       // Error handling is done in the parent component
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -112,6 +114,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     };
 
     try {
+      setIsLoading(true);
       const requiredId =
         currentUser.ownerId === "Agency Owner itself"
           ? currentUser.id
@@ -147,6 +150,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
       console.log(error);
 
       // Error handling is done in the parent component
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -402,9 +407,19 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
+                disabled={isLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150 disabled:opacity-50"
               >
-                {mode === "edit" ? "Save Changes" : "Add Employee"}
+                {isLoading ? (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>{mode === "add" ? "Creating" : "Saving"}</p>
+                    <ClipLoader size={14} />
+                  </div>
+                ) : mode === "add" ? (
+                  "Add Creator"
+                ) : (
+                  "Save Changes"
+                )}
               </button>
             </div>
           </form>
