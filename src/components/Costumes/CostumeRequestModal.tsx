@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
+import { ClipLoader } from "react-spinners";
 
 interface CostumeRequest {
   _id: string;
@@ -41,7 +42,7 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
   refreshRequests,
 }) => {
   const { currentUser } = useAppSelector((state) => state.user);
-
+  const [isLoading, setIsLoading] = useState(false);
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
 
   const [formData, setFormData] = useState({
@@ -75,6 +76,7 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setIsLoading(true);
       const requiredId =
         currentUser?.ownerId === "Agency Owner itself"
           ? currentUser?.id
@@ -105,11 +107,16 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
           : "Costume request created successfully"
       );
       onClose();
-    } catch (error) {}
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   const handleUpdateRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setIsLoading(true);
       const requiredId =
         currentUser?.ownerId === "Agency Owner itself"
           ? currentUser?.id
@@ -141,6 +148,8 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
       onClose();
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -347,9 +356,19 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
               </button>
               <button
                 type="submit"
+                disabled={isLoading}
                 className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors duration-150"
               >
-                {mode === "edit" ? "Save Changes" : "Create Request"}
+                {isLoading ? (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>{mode === "add" ? "Creating" : "Saving"}</p>
+                    <ClipLoader size={14} />
+                  </div>
+                ) : mode === "add" ? (
+                  "Create Request"
+                ) : (
+                  "Save Changes"
+                )}
               </button>
             </div>
           </form>

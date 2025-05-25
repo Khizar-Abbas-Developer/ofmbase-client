@@ -134,18 +134,16 @@ const Employees = () => {
 
   const handleDeleteEmployee = async (id: string) => {
     try {
+      setIsLoading(true);
       const requiredId =
         currentUser?.ownerId === "Agency Owner itself"
           ? currentUser?.id
           : currentUser.ownerId;
-      const response = await axios.delete(
-        `${URL}/api/employee/delete-employee/${requiredId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${currentUser?.token}`,
-          },
-        }
-      );
+      await axios.delete(`${URL}/api/employee/delete-employee/${requiredId}`, {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+        },
+      });
       fetchEmployees();
     } catch (error) {
       console.error("Error deleting employee:", error);

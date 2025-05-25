@@ -5,6 +5,7 @@ import type { Database } from "../../lib/database.types";
 import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 import axios from "axios";
 import toast from "react-hot-toast";
+import { ClipLoader } from "react-spinners";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 
@@ -25,6 +26,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
   refresh,
   employees,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState({});
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
 
@@ -66,6 +68,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setIsLoading(true);
       if (!formData.title || !formData.priority) return;
       const requiredId =
         currentUser.ownerId === "Agency Owner itself"
@@ -90,6 +93,8 @@ const TaskModal: React.FC<TaskModalProps> = ({
       refresh();
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLoading(false);
     }
 
     // if (mode === 'edit' && task) {
@@ -117,6 +122,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
   const handleEditTask = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setIsLoading(true);
       await axios.patch(
         `${URL}/api/task/update-task/${task?._id}`,
         {
@@ -141,6 +147,8 @@ const TaskModal: React.FC<TaskModalProps> = ({
     } catch (error: any) {
       console.log(error);
       toast.error(error.response.data.message);
+    } finally {
+      setIsLoading(false);
     }
   };
   return (
@@ -258,7 +266,17 @@ const TaskModal: React.FC<TaskModalProps> = ({
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
               >
-                {mode === "edit" ? "Save Changes" : "Create Task"}
+                {isLoading ? (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>{mode === "add" ? "Creating" : "Saving"}</p>
+                    <ClipLoader size={14} />
+                  </div>
+                ) : mode === "add" ? (
+                  "Add Creator"
+                ) : (
+                  "Save Changes"
+                )}
+                {/* {mode === "edit" ? "Save Changes" : "Create Task"} */}
               </button>
             </div>
           </form>

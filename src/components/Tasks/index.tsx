@@ -35,6 +35,7 @@ const Tasks: React.FC<TasksProps> = ({ employees = [] }) => {
 
   const fetchTasks = async () => {
     try {
+      setIsLoading(true);
       const requiredId =
         currentUser.ownerId === "Agency Owner itself"
           ? currentUser.id
@@ -109,6 +110,7 @@ const Tasks: React.FC<TasksProps> = ({ employees = [] }) => {
 
   const handleDeleteTask = async (id: string) => {
     try {
+      setIsLoading(true);
       if (!id) {
         toast.error("Invalid task ID");
         return;
@@ -121,9 +123,10 @@ const Tasks: React.FC<TasksProps> = ({ employees = [] }) => {
       fetchTasks();
       toast.success("Task deleted successfully");
 
-      setTasks((prev) => prev.filter((t) => t.id !== id));
+      // setTasks((prev) => prev.filter((t) => t.id !== id));
     } catch (error) {
       console.error("Error deleting task:", error);
+      setIsLoading(false);
     }
   };
 
