@@ -173,6 +173,7 @@ const Library = () => {
 
   const fetchRequests = async () => {
     try {
+      setIsLoading(true);
       const requiredId =
         currentUser.ownerId === "Agency Owner itself"
           ? currentUser.id
@@ -346,6 +347,7 @@ const Library = () => {
 
   const handleDeleteRequest = async (id: string) => {
     try {
+      setIsLoading(true);
       await axios.delete(`${URL}/api/content-request/delete-request/${id}`, {
         headers: {
           Authorization: `Bearer ${currentUser?.token}`,
@@ -356,6 +358,7 @@ const Library = () => {
       toast.success("Request deleted successfully");
     } catch (error) {
       console.error("Error deleting request:", error);
+      setIsLoading(false);
     }
   };
 
