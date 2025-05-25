@@ -1,5 +1,6 @@
-import React from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import React from "react";
+import { X, AlertTriangle } from "lucide-react";
+import { ClipLoader } from "react-spinners";
 
 interface DeleteConfirmationModalProps {
   onClose: () => void;
@@ -14,6 +15,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   title,
   message,
 }) => {
+  const [isLoading, setIsLoading] = React.useState(false);
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
@@ -45,10 +47,20 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                 Cancel
               </button>
               <button
-                onClick={onConfirm}
+                onClick={() => {
+                  onConfirm();
+                  setIsLoading(true);
+                }}
                 className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors duration-150"
               >
-                Delete
+                {isLoading ? (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>{"processing"}</p>
+                    <ClipLoader size={14} color="white" />
+                  </div>
+                ) : (
+                  "Delete"
+                )}
               </button>
             </div>
           </div>
