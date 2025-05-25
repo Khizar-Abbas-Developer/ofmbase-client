@@ -145,6 +145,7 @@ const Library = () => {
 
   const fetchContent = async () => {
     try {
+      setIsLoading(true);
       const creator = creators.find((c) => c.email === currentUser.email);
       const creatorId = creator?._id;
 
@@ -168,6 +169,8 @@ const Library = () => {
       setFolderContentCounts(counts);
     } catch (error) {
       console.error("Error fetching content:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -332,16 +335,13 @@ const Library = () => {
 
   const handleDeleteContent = async (id: string) => {
     try {
-      console.log(id);
-
-      const response = await axios.delete(
-        `${URL}/api/content/delete-content/${id}`
-      );
-      console.log(response);
-
+      setIsLoading(true);
+      await axios.delete(`${URL}/api/content/delete-content/${id}`);
+      setSelectedContent(null);
       fetchContent();
     } catch (error) {
       console.error("Error deleting content:", error);
+      setIsLoading(false);
     }
   };
 
@@ -353,8 +353,8 @@ const Library = () => {
           Authorization: `Bearer ${currentUser?.token}`,
         },
       });
-      fetchRequests();
       setSelectedRequest(null);
+      fetchRequests();
       toast.success("Request deleted successfully");
     } catch (error) {
       console.error("Error deleting request:", error);

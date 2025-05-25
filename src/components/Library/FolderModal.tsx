@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import React, { useState } from "react";
+import { X } from "lucide-react";
+import { ClipLoader } from "react-spinners";
 
 interface FolderModalProps {
   onClose: () => void;
@@ -7,10 +8,12 @@ interface FolderModalProps {
 }
 
 const FolderModal: React.FC<FolderModalProps> = ({ onClose, onSave }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
+    setIsLoading(true);
     e.preventDefault();
     onSave({ name, description });
   };
@@ -21,7 +24,9 @@ const FolderModal: React.FC<FolderModalProps> = ({ onClose, onSave }) => {
       <div className="relative min-h-screen flex items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl max-w-md w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-            <h2 className="text-xl font-semibold text-slate-800">Create New Folder</h2>
+            <h2 className="text-xl font-semibold text-slate-800">
+              Create New Folder
+            </h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-150"
@@ -68,9 +73,17 @@ const FolderModal: React.FC<FolderModalProps> = ({ onClose, onSave }) => {
               </button>
               <button
                 type="submit"
+                disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
               >
-                Create Folder
+                {isLoading ? (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>Creating</p>
+                    <ClipLoader size={14} color="white" />
+                  </div>
+                ) : (
+                  "Create Folder"
+                )}
               </button>
             </div>
           </form>
