@@ -156,21 +156,19 @@ const Costumes: React.FC<CostumesProps> = () => {
 
   const handleDeleteRequest = async (id: string) => {
     try {
-      console.log(id);
-      const response = await axios.delete(
-        `${URL}/api/content-request/delete-request/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${currentUser?.token}`,
-          },
-        }
-      );
+      setIsLoading(true);
+      await axios.delete(`${URL}/api/content-request/delete-request/${id}`, {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+        },
+      });
       fetchRequests();
       setShowDetailModal(false);
       setSelectedRequest(null);
       toast.success("Request deleted successfully");
     } catch (error) {
       console.error("Error deleting costume request:", error);
+      setIsLoading(false);
     }
   };
 

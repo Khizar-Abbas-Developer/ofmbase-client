@@ -31,7 +31,6 @@ const CostumeDetailModal: React.FC<CostumeDetailModalProps> = ({
   onEdit,
   onDelete,
 }) => {
-  console.log(request);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
