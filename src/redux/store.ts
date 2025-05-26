@@ -1,5 +1,6 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import userReducer from "./user/userSlice";
+import notificationReducer from "./notifications/notifications";
 import {
   persistReducer,
   persistStore,

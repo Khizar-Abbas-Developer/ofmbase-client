@@ -3,6 +3,7 @@ import { useAuthStore } from "../lib/store";
 import { useAppSelector } from "../redux/hooks"; // Adjust the path as needed
 import { Users, DollarSign, TrendingUp, Bell, Search } from "lucide-react";
 import axios from "axios";
+import NotificationComponent from "./Notifications";
 
 const StatCard = ({
   title,
@@ -58,6 +59,7 @@ const ActivityItem = ({
 );
 
 const Dashboard = () => {
+  const [notifications, setNotifications] = useState([]);
   const [creators, setCreators] = useState([]);
   const { profile } = useAuthStore();
   const { currentUser } = useAppSelector((state) => state.user);
@@ -104,6 +106,19 @@ const Dashboard = () => {
     fetchCreators();
   }, []);
 
+  const fetchNotifications = async () => {
+    try {
+      const response = await axios.get(
+        `${URL}/api/notifications/get-notifications/${currentUser?.id}`
+      );
+      setNotifications(response.data.notifications);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
   return (
     <div className="max-w-7xl mx-auto pt-16 lg:pt-0 h-[170vh] lg:h-auto">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 space-y-4 lg:space-y-0">
@@ -114,20 +129,7 @@ const Dashboard = () => {
           <p className="text-slate-500 mt-1">Here's what's happening today.</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full sm:w-64 pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <Search className="h-5 w-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-          </div>
-          <button className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors duration-150 relative">
-            <Bell className="h-5 w-5 text-slate-600" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
-        </div>
+        <NotificationComponent data={notifications} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-8">
