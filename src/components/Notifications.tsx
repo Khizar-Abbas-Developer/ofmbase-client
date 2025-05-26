@@ -49,7 +49,7 @@ const NotificationComponent = ({ data }) => {
                 notifications.length > 0 &&
                 notifications.map((n: any) => (
                   <li
-                    key={n.id}
+                    key={n._id}
                     className="px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
                   >
                     {n.message}
