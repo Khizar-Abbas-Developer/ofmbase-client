@@ -17,6 +17,7 @@ import SignIn from "./components/Auth/SignIn";
 import SignUp from "./components/Auth/SignUp";
 
 // Protected Pages
+// Protected Pages
 import Dashboard from "./components/Dashboard";
 import Creators from "./components/Creators";
 import Employees from "./components/Employees";
