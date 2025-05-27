@@ -35,6 +35,7 @@ import { useDispatch } from "react-redux";
 import { addNotification } from "./redux/notifications/notifications";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { addNotifications } from "./redux/notifications/notifications";
 
 function App() {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
@@ -53,8 +54,7 @@ function App() {
       const response = await axios.get(
         `${URL}/api/notifications/get-notifications/${data.forId}`
       );
-      console.log(response);
-
+      dispatch(addNotifications(response.data.notifications));
       toast.success("New notification received!");
     }
   };

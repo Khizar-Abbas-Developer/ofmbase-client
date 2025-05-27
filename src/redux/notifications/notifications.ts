@@ -30,7 +30,7 @@ const notificationsSlice = createSlice({
 
     // Add multiple notifications at once
     addNotifications: (state, action: PayloadAction<Notification[]>) => {
-      state.notifications = [...state.notifications, ...action.payload];
+      state.notifications = action.payload;
     },
 
     // Clear all notifications

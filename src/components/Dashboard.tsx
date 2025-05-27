@@ -4,6 +4,8 @@ import { useAppSelector } from "../redux/hooks"; // Adjust the path as needed
 import { Users, DollarSign, TrendingUp, Bell, Search } from "lucide-react";
 import axios from "axios";
 import NotificationComponent from "./Notifications";
+import { useDispatch } from "react-redux";
+import { addNotifications } from "../redux/notifications/notifications";
 
 const StatCard = ({
   title,
@@ -59,6 +61,7 @@ const ActivityItem = ({
 );
 
 const Dashboard = () => {
+  const dispatch = useDispatch();
   const [notifications, setNotifications] = useState([]);
   const [creators, setCreators] = useState([]);
   const { profile } = useAuthStore();
@@ -111,7 +114,10 @@ const Dashboard = () => {
       const response = await axios.get(
         `${URL}/api/notifications/get-notifications/${currentUser?.id}`
       );
+      console.log("Fetched notifications:", response.data.notifications);
+
       setNotifications(response.data.notifications);
+      dispatch(addNotifications(response.data.notifications));
     } catch (error) {
       console.log(error);
     }

@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, Bell } from "lucide-react";
-import socket from "../lib/socket";
+import { useAppSelector } from "../redux/hooks";
 
 const NotificationComponent = ({ data }) => {
   const [showNotifications, setShowNotifications] = useState(false);
+  const { notifications } = useAppSelector((state) => state.notifications);
   const dropdownRef = useRef(null);
-  const notifications: [any] = data || [];
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: any) => {
@@ -16,7 +16,6 @@ const NotificationComponent = ({ data }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 relative">
       <div className="relative">
