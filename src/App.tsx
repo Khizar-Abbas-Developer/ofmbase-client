@@ -37,6 +37,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 
 function App() {
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const dispatch = useDispatch();
   const { currentUser } = useAppSelector((state) => state.user);
   const loadProfile = useAuthStore((state) => state.loadProfile);
@@ -49,14 +50,12 @@ function App() {
 
   const handleNotification = async (data: any) => {
     if (data.forId === currentUser.id) {
-      toast(data.message, {
-        icon: "⚠️",
-        style: {
-          border: "1px solid orange",
-          padding: "16px",
-          color: "orange",
-        },
-      });
+      const response = await axios.get(
+        `${URL}/api/notifications/get-notifications/${data.forId}`
+      );
+      console.log(response);
+
+      toast.success("New notification received!");
     }
   };
 

@@ -22,6 +22,7 @@ import type { PersistPartial } from "redux-persist/es/persistReducer";
 // 1) Create combined reducer
 const rootReducer = combineReducers({
   user: userReducer,
+  notifications: notificationReducer,
 });
 
 // 2) Create a no-op storage for SSR
@@ -52,7 +53,7 @@ const persistConfig: PersistConfig<RootReducerState> = {
   key: "root",
   version: 1,
   storage,
-  whitelist: ["user"],
+  whitelist: ["user", "notifications"],
 };
 
 // 5) Wrap with persistReducer
