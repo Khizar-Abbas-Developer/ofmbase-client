@@ -91,6 +91,7 @@ function App() {
     <Router>
       <Routes>
         {/* Auth Routes */}
+        {/* Auth Routes */}
         <Route element={<AuthLayout />}>
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
