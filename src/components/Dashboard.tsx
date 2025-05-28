@@ -114,8 +114,6 @@ const Dashboard = () => {
       const response = await axios.get(
         `${URL}/api/notifications/get-notifications/${currentUser?.id}`
       );
-      console.log("Fetched notifications:", response.data.notifications);
-
       setNotifications(response.data.notifications);
       dispatch(addNotifications(response.data.notifications));
     } catch (error) {

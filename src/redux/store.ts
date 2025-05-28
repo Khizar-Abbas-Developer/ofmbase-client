@@ -1,5 +1,6 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import userReducer from "./user/userSlice";
+import autoMergeLevel2 from "redux-persist/lib/stateReconciler/autoMergeLevel2";
 import notificationReducer from "./notifications/notifications";
 import {
   persistReducer,
@@ -54,6 +55,7 @@ const persistConfig: PersistConfig<RootReducerState> = {
   version: 1,
   storage,
   whitelist: ["user", "notifications"],
+  stateReconciler: autoMergeLevel2, // <-- ADD THIS LINE
 };
 
 // 5) Wrap with persistReducer

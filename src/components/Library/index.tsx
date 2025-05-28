@@ -22,6 +22,7 @@ import RequestPreviewModal from "./RequestPreviewModal";
 import type { Database } from "../../lib/database.types";
 import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 import axios from "axios";
+import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 
 type ContentFolder = Database["public"]["Tables"]["folders"]["Row"];
@@ -44,9 +45,16 @@ interface ContentRequest {
 }
 
 const Library = () => {
+  const location = useLocation();
+  const secondSection = location.state?.secondSection;
   const { currentUser } = useAppSelector((state) => state.user);
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const [activeTab, setActiveTab] = useState<"library" | "requests">("library");
+  useEffect(() => {
+    if (secondSection) {
+      setActiveTab("requests");
+    }
+  }, [secondSection]);
   const [folders, setFolders] = useState<ContentFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [content, setContent] = useState<ContentItem[]>([]);
@@ -84,9 +92,7 @@ const Library = () => {
   useEffect(() => {
     if (creators.length > 0 && currentUser.email) {
       const creator = creators.find((c) => c.email === currentUser.email);
-      if (creator?._id) {
-        fetchContent();
-      }
+      fetchContent();
     }
   }, [creators, currentUser.email]);
 
@@ -139,22 +145,20 @@ const Library = () => {
     } catch (error) {
       console.error("Error fetching folders:", error);
     } finally {
-      setIsLoading(false);
     }
   };
 
   const fetchContent = async () => {
     try {
-      setIsLoading(true);
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
       const creator = creators.find((c) => c.email === currentUser.email);
       const creatorId = creator?._id;
-
-      if (!creatorId) return;
-
       const response = await axios.get(
-        `${URL}/api/content/get-content/${creatorId}`
+        `${URL}/api/content/get-content/${requiredId}`
       );
-
       const contentItems = response.data || [];
 
       setContent(contentItems);

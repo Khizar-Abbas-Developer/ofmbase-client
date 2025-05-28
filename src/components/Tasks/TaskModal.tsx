@@ -29,7 +29,6 @@ const TaskModal: React.FC<TaskModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState({});
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
-
   const { currentUser } = useAppSelector((state) => state.user);
 
   const [formData, setFormData] = useState<Partial<Task>>({
@@ -218,7 +217,11 @@ const TaskModal: React.FC<TaskModalProps> = ({
                 >
                   <option value="">Assign to</option>
                   {employees.map((employee) => (
-                    <option key={employee._id} value={employee.id}>
+                    <option
+                      key={employee._id}
+                      value={employee.id}
+                      onChange={(e) => console.log(e.target.value)}
+                    >
                       {employee.name}
                     </option>
                   ))}

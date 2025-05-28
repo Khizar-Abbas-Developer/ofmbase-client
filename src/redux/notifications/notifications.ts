@@ -13,10 +13,12 @@ interface Notification {
 
 interface NotificationsState {
   notifications: Notification[];
+  newNotification: Boolean;
 }
 
 const initialState: NotificationsState = {
   notifications: [],
+  newNotification: false,
 };
 
 const notificationsSlice = createSlice({
@@ -37,10 +39,18 @@ const notificationsSlice = createSlice({
     clearNotifications: (state) => {
       state.notifications = [];
     },
+    // Update newNotification boolean
+    setNewNotification: (state, action: PayloadAction<boolean>) => {
+      state.newNotification = action.payload;
+    },
   },
 });
 
-export const { addNotification, addNotifications, clearNotifications } =
-  notificationsSlice.actions;
+export const {
+  addNotification,
+  addNotifications,
+  clearNotifications,
+  setNewNotification,
+} = notificationsSlice.actions;
 
 export default notificationsSlice.reducer;
