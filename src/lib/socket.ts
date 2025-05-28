@@ -1,6 +1,8 @@
 // socket.js
 import { io } from "socket.io-client";
-const socket = io("https://ofmbase-server-production.up.railway.app", {
+const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+
+const socket = io(URL, {
   transports: ["websocket"], // force websocket
   withCredentials: true,
 });

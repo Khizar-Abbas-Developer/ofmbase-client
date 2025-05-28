@@ -36,10 +36,11 @@ const Tasks: React.FC<TasksProps> = ({ employees = [] }) => {
   const fetchTasks = async () => {
     try {
       setIsLoading(true);
-      const requiredId =
-        currentUser.ownerId === "Agency Owner itself"
-          ? currentUser.id
-          : currentUser.ownerId;
+      // const requiredId =
+      //   currentUser.ownerId === "Agency Owner itself"
+      //     ? currentUser.id
+      //     : currentUser.ownerId;
+      const requiredId = currentUser.id;
       setIsLoading(true);
 
       const response = await axios.get(
@@ -50,8 +51,7 @@ const Tasks: React.FC<TasksProps> = ({ employees = [] }) => {
           },
         }
       );
-
-      setTasks(response.data);
+      setTasks(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching tasks:", error); // ✅ move inside catch
     } finally {
@@ -130,34 +130,37 @@ const Tasks: React.FC<TasksProps> = ({ employees = [] }) => {
     }
   };
 
-  const handleStatusChange = async (id: string, status: Task["status"]) => {
+  const handleStatusChange = async (task: Task, value: string) => {
     try {
-      if (!id) {
-        console.error("Invalid task ID for status update");
-        return;
-      }
+      const dataToSend = { ...task, status: value };
 
-      const { error } = await supabase
-        .from("tasks")
-        .update({ status })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
+      await axios.patch(`${URL}/api/task/update-task/${task._id}`, dataToSend, {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+        },
+      });
+      setIsLoading(true);
+      setTasks((prev) =>
+        prev.map((t) => (t._id === task._id ? { ...t, status: value } : t))
+      );
     } catch (error) {
       console.error("Error updating task status:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const filteredTasks = tasks.filter((task) => {
-    if (statusFilter !== "all" && task.status !== statusFilter) return false;
-    if (priorityFilter !== "all" && task.priority !== priorityFilter)
-      return false;
-    if (assigneeFilter !== "all" && task.assigned_to !== assigneeFilter)
-      return false;
-    return true;
-  });
+  const filteredTasks = Array.isArray(tasks)
+    ? tasks.filter((task) => {
+        if (statusFilter !== "all" && task.status !== statusFilter)
+          return false;
+        if (priorityFilter !== "all" && task.priority !== priorityFilter)
+          return false;
+        if (assigneeFilter !== "all" && task.assigned_to !== assigneeFilter)
+          return false;
+        return true;
+      })
+    : [];
 
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     switch (sortBy) {
@@ -255,20 +258,22 @@ const Tasks: React.FC<TasksProps> = ({ employees = [] }) => {
               <option value="low">Low</option>
             </select>
 
-            <select
-              value={assigneeFilter}
-              onChange={(e) => setAssigneeFilter(e.target.value)}
-              className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Assignees</option>
-              {fetchedEmployees &&
-                fetchedEmployees.length > 0 &&
-                fetchedEmployees.map((employee) => (
-                  <option key={employee._id} value={employee.id}>
-                    {employee.name}
-                  </option>
-                ))}
-            </select>
+            {currentUser?.accountType === "owner" && (
+              <select
+                value={assigneeFilter}
+                onChange={(e) => setAssigneeFilter(e.target.value)}
+                className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Assignees</option>
+                {fetchedEmployees &&
+                  fetchedEmployees.length > 0 &&
+                  fetchedEmployees.map((employee) => (
+                    <option key={employee._id} value={employee.id}>
+                      {employee.name}
+                    </option>
+                  ))}
+              </select>
+            )}
 
             <div className="flex-1" />
 

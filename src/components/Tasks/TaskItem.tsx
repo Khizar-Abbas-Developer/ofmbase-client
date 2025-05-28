@@ -9,7 +9,7 @@ interface TaskItemProps {
   taskId: string;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
-  onStatusChange: (id: string, status: Task["status"]) => void;
+  onStatusChange: (task: any, value: any) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -83,9 +83,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <div className="flex items-center gap-2">
               <select
                 value={task.status}
-                onChange={(e) =>
-                  onStatusChange(task.id, e.target.value as Task["status"])
-                }
+                onChange={(e) => onStatusChange(task, e.target.value)}
                 className={`text-xs px-2 py-1 rounded-full border-0 ${getStatusColor(
                   task.status
                 )}`}
