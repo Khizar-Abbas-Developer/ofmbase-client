@@ -132,6 +132,7 @@ const Tasks: React.FC<TasksProps> = ({ employees = [] }) => {
 
   const handleStatusChange = async (task: Task, value: string) => {
     try {
+      setIsLoading(true);
       const dataToSend = { ...task, status: value };
 
       await axios.patch(`${URL}/api/task/update-task/${task._id}`, dataToSend, {
