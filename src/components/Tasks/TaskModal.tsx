@@ -275,7 +275,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
                     <ClipLoader size={14} />
                   </div>
                 ) : mode === "add" ? (
-                  "Add Creator"
+                  "Create Task"
                 ) : (
                   "Save Changes"
                 )}

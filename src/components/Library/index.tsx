@@ -181,10 +181,7 @@ const Library = () => {
   const fetchRequests = async () => {
     try {
       setIsLoading(true);
-      const requiredId =
-        currentUser.ownerId === "Agency Owner itself"
-          ? currentUser.id
-          : currentUser.ownerId;
+      const requiredId = currentUser.id;
       const response = await axios.get(
         `${URL}/api/content-request/get-requests/${requiredId}`,
         {
