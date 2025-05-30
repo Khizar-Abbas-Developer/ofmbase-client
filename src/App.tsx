@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import dayjs from "dayjs"; // Optional, makes formatting easier
 import {
   BrowserRouter as Router,
   Routes,
@@ -37,6 +38,9 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { addNotifications } from "./redux/notifications/notifications";
 import { setNewNotification } from "./redux/notifications/notifications";
+import CheckoutPage from "./components/CheckoutPage";
+import PaymentSuccessPage from "./components/PaymentSuccess";
+import PaymentFailurePage from "./components/PaymentFailure";
 
 function App() {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
@@ -120,6 +124,9 @@ function App() {
           <Route path="/financials" element={<Financials />} />
           <Route path="/credentials" element={<Credentials />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/payment-success" element={<PaymentSuccessPage />} />
+          <Route path="/payment-failure" element={<PaymentFailurePage />} />
         </Route>
       </Routes>
     </Router>

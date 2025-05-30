@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.1",
+    "@stripe/react-stripe-js": "^3.7.0",
+    "@stripe/stripe-js": "^7.3.1",
     "@supabase/supabase-js": "^2.39.3",
     "@vercel/speed-insights": "^1.2.0",
     "axios": "^1.9.0",

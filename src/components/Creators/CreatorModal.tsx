@@ -127,6 +127,8 @@ const CreatorModal: React.FC<CreatorModalProps> = ({
   const handleEditCreator = async (e) => {
     e.preventDefault();
     try {
+      console.log(creator);
+
       setIsLoading(true);
       const dataToSend = {
         email: formData.email,
@@ -138,10 +140,7 @@ const CreatorModal: React.FC<CreatorModalProps> = ({
         address: formData.address,
         measurements: formData.measurements,
       };
-      const requiredId =
-        currentUser?.ownerId === "Agency Owner itself"
-          ? currentUser.id
-          : currentUser.ownerId;
+      const requiredId = creator._id;
       const response = await axios.patch(
         `${URL}/api/creator/update-creator/${requiredId}`,
         dataToSend,

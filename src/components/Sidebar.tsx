@@ -10,8 +10,11 @@ import {
   managementSection,
   settingsSection,
 } from "../constants";
+import { useEffect } from "react";
+import axios from "axios";
 
 const Sidebar = ({ onClose }: { onClose?: () => void }) => {
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const { currentUser } = useAppSelector((state) => state.user);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -76,6 +79,57 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
     );
   };
 
+  const checkSubscriptionExpiration = () => {
+    const start = new Date(currentUser.subscriptionStart);
+    const expiry = new Date(currentUser.subscriptionExpiry);
+
+    if (!isNaN(start) && !isNaN(expiry)) {
+      const now = new Date();
+
+      if (now > expiry) {
+        console.log("🔴 Subscription is expired");
+      } else {
+        const timeDiff = expiry.getTime() - now.getTime();
+        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
+
+        // console.log(
+        //   `🟢 Subscription is active. Time remaining: ${days}d ${hours}h ${minutes}m`
+        // );
+      }
+    } else {
+      console.log("❌ Invalid subscription dates.");
+    }
+  };
+
+  const checkTokenExpiration = async () => {
+    const token = await currentUser?.token;
+    try {
+      await axios.post(
+        `${URL}/api/user/confirm-token`,
+        { token },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+        }
+      );
+    } catch (error: any) {
+      if (error.response.data.message === "Token has expired.") {
+        console.log("🔴 Token has expired");
+        dispatch(signOutUser());
+        navigate("/sign");
+      }
+    }
+  };
+  useEffect(() => {
+    if (currentUser) {
+      checkTokenExpiration();
+      checkSubscriptionExpiration();
+    }
+  }, [currentUser, navigate]);
   return (
     <>
       {/* Existing Sidebar */}

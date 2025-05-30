@@ -84,7 +84,7 @@ const Creators: React.FC<CreatorsProps> = ({ onAdd, onUpdate, onDelete }) => {
       fetchCreators();
     } catch (error) {
       console.log(error);
-      setLoading(false)
+      setLoading(false);
     }
   };
   return (

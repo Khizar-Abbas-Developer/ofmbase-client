@@ -36,10 +36,26 @@ const userSlice = createSlice({
       state.loading = false;
       state.currentUser = null;
     },
+    updateUserFields: (
+      state,
+      action: PayloadAction<Partial<typeof state.currentUser>>
+    ) => {
+      if (state.currentUser) {
+        Object.entries(action.payload).forEach(([key, value]) => {
+          // @ts-ignore to allow dynamic property assignment
+          state.currentUser[key] = value;
+        });
+      }
+    },
   },
 });
 
 // Export actions and reducer
-export const { signInStart, singInSuccess, singInFailure, signOutUser } =
-  userSlice.actions;
+export const {
+  signInStart,
+  singInSuccess,
+  singInFailure,
+  signOutUser,
+  updateUserFields,
+} = userSlice.actions;
 export default userSlice.reducer;
