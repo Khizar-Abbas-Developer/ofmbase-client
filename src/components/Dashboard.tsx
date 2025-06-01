@@ -136,26 +136,28 @@ const Dashboard = () => {
         <NotificationComponent data={notifications} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-8">
-        <StatCard
-          title="Active Creators"
-          value={creators.length}
-          icon={Users}
-          trend={stats.activeCreators.trend}
-        />
-        <StatCard
-          title="Monthly Revenue"
-          value={stats.monthlyRevenue.value}
-          icon={DollarSign}
-          trend={stats.monthlyRevenue.trend}
-        />
-        <StatCard
-          title="Monthly Growth"
-          value={stats.monthlyGrowth.value}
-          icon={TrendingUp}
-          trend={stats.monthlyGrowth.trend}
-        />
-      </div>
+      {currentUser.accountType === "owner" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-8">
+          <StatCard
+            title="Active Creators"
+            value={creators.length}
+            icon={Users}
+            trend={stats.activeCreators.trend}
+          />
+          <StatCard
+            title="Monthly Revenue"
+            value={stats.monthlyRevenue.value}
+            icon={DollarSign}
+            trend={stats.monthlyRevenue.trend}
+          />
+          <StatCard
+            title="Monthly Growth"
+            value={stats.monthlyGrowth.value}
+            icon={TrendingUp}
+            trend={stats.monthlyGrowth.trend}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
