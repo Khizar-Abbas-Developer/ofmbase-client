@@ -46,6 +46,8 @@ interface ContentRequest {
 
 const Library = () => {
   const location = useLocation();
+  const [selectedContentRequest, setSelectedContentRequest] = useState({});
+  const [uploadContentRequest, setUploadContentRequest] = useState(false);
   const secondSection = location.state?.secondSection;
   const { currentUser } = useAppSelector((state) => state.user);
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
@@ -87,18 +89,18 @@ const Library = () => {
   useEffect(() => {
     fetchFolders();
     fetchCreators();
-    fetchRequests();
+    fetchAllContentAndRequests();
   }, []);
   useEffect(() => {
     if (creators.length > 0 && currentUser.email) {
       const creator = creators.find((c) => c.email === currentUser.email);
-      fetchContent();
+      fetchAllContentAndRequests;
     }
   }, [creators, currentUser.email]);
 
   useEffect(() => {
     if (selectedFolder) {
-      fetchContent();
+      fetchAllContentAndRequests();
     }
   }, [selectedFolder]);
   const fetchCreators = async () => {
@@ -148,23 +150,36 @@ const Library = () => {
     }
   };
 
-  const fetchContent = async () => {
+  const fetchAllContentAndRequests = async () => {
     try {
+      setIsLoading(true);
+
       const requiredId =
         currentUser?.ownerId === "Agency Owner itself"
           ? currentUser.id
           : currentUser.ownerId;
+
       const creator = creators.find((c) => c.email === currentUser.email);
       const creatorId = creator?._id;
-      const response = await axios.get(
-        `${URL}/api/content/get-content/${requiredId}`
-      );
-      const contentItems = response.data || [];
+
+      const [contentRes, requestRes] = await Promise.all([
+        axios.get(`${URL}/api/content/get-content/${requiredId}`),
+        axios.get(`${URL}/api/content-request/get-requests/${currentUser.id}`, {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }),
+      ]);
+
+      const contentItems = contentRes.data || [];
+      const contentRequests = requestRes.data || [];
 
       setContent(contentItems);
+      setRequests(contentRequests);
 
       const counts: Record<string, number> = {};
-      contentItems.forEach((item: any) => {
+
+      [...contentItems, ...contentRequests].forEach((item: any) => {
         if (item.folderId) {
           counts[item.folderId] = (counts[item.folderId] || 0) + 1;
         }
@@ -172,27 +187,7 @@ const Library = () => {
 
       setFolderContentCounts(counts);
     } catch (error) {
-      console.error("Error fetching content:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchRequests = async () => {
-    try {
-      setIsLoading(true);
-      const requiredId = currentUser.id;
-      const response = await axios.get(
-        `${URL}/api/content-request/get-requests/${requiredId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${currentUser?.token}`,
-          },
-        }
-      );
-      setRequests(response.data || []);
-    } catch (error) {
-      console.error("Error fetching requests:", error);
+      console.error("Error fetching content or requests:", error);
     } finally {
       setIsLoading(false);
     }
@@ -290,7 +285,7 @@ const Library = () => {
           return publicUrl;
         })
       );
-      fetchContent();
+      fetchAllContentAndRequests();
       setShowUploadModal(false);
       toast.success("Files uploaded successfully");
       // refreshContent(); // Optional: refetch or update state
@@ -299,6 +294,73 @@ const Library = () => {
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+    }
+  };
+
+  const handleUploadContentRequest = async (files: File[]) => {
+    try {
+      const creator = creators.find((c) => c.email === currentUser.email);
+      if (!creator) {
+        toast.error("Creator can only upload the content");
+        return;
+      }
+
+      const totalSize = files.reduce((acc, file) => acc + file.size, 0);
+      let uploadedBytes = 0;
+
+      const content_urls = await Promise.all(
+        files.map(async (file) => {
+          const formData = new FormData();
+
+          formData.append("file", file);
+          formData.append("fileName", file.name);
+          formData.append("requestId", selectedContentRequest._id);
+          formData.append("status", "done");
+
+          // Determine type based on file MIME
+          const mimeType = file.type;
+          let type = "";
+
+          if (mimeType.startsWith("video/")) {
+            type = "video/";
+          } else if (mimeType.startsWith("image/")) {
+            type = "image/";
+          }
+
+          // Add the detected type
+          formData.append("contentType", type);
+
+          const response = await axios.post(
+            `${URL}/api/content-request/upload-content`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+              onUploadProgress: (progressEvent) => {
+                const currentUploaded = progressEvent.loaded;
+                uploadedBytes += currentUploaded;
+                const progress = Math.min(
+                  (uploadedBytes / totalSize) * 100,
+                  100
+                );
+                setUploadProgress(progress);
+              },
+            }
+          );
+          const { publicUrl } = response.data;
+          return publicUrl;
+        })
+      );
+      toast.success("Files uploaded successfully");
+      // refreshContent(); // Optional: refetch or update state
+      fetchAllContentAndRequests();
+    } catch (error) {
+      console.error("Error uploading content:", error);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      setShowUploadModal(false);
     }
   };
 
@@ -339,7 +401,41 @@ const Library = () => {
       setIsLoading(true);
       await axios.delete(`${URL}/api/content/delete-content/${id}`);
       setSelectedContent(null);
-      fetchContent();
+      fetchAllContentAndRequests();
+    } catch (error) {
+      console.error("Error deleting content:", error);
+      setIsLoading(false);
+    }
+  };
+  const handleDeleteContentRequestOnly = async (id: string) => {
+    try {
+      setIsLoading(true);
+      await axios.delete(`${URL}/api/content-request//delete-request/${id}`, {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+        },
+      });
+      setSelectedContentRequest({});
+      setSelectedContent(null);
+      fetchAllContentAndRequests();
+    } catch (error) {
+      console.error("Error deleting content:", error);
+      setIsLoading(false);
+    }
+  };
+  const handleDeleteContentRequest = async (id: string) => {
+    try {
+      setIsLoading(true);
+      await axios.delete(
+        `${URL}/api/content-request/delete-content-request-only/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      setSelectedRequest(null);
+      fetchAllContentAndRequests();
     } catch (error) {
       console.error("Error deleting content:", error);
       setIsLoading(false);
@@ -355,7 +451,7 @@ const Library = () => {
         },
       });
       setSelectedRequest(null);
-      fetchRequests();
+      fetchAllContentAndRequests();
       toast.success("Request deleted successfully");
     } catch (error) {
       console.error("Error deleting request:", error);
@@ -424,13 +520,35 @@ const Library = () => {
     }
   };
 
+  interface ContentItem {
+    media_urls?: string[];
+    content_urls?: string[];
+    fileName: string; // Corrected key
+  }
+
   const handleDownloadContent = (item: ContentItem) => {
-    const link = document.createElement("a");
-    link.href = item.url;
-    link.download = item.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const url = item.media_urls?.[0] || item.content_urls?.[0];
+    if (!url) {
+      console.error("No downloadable URL found.");
+      return;
+    }
+
+    // Try to force download via blob for better compatibility
+    fetch(url, { mode: "cors" }) // make sure the URL allows CORS if cross-origin
+      .then((res) => res.blob())
+      .then((blob) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = item.fileName; // ✅ Correct file name
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      })
+      .catch((err) => {
+        console.error("Download failed", err);
+      });
   };
 
   const handleRequestContent = (folder: ContentFolder) => {
@@ -443,7 +561,16 @@ const Library = () => {
   };
 
   const getFolderContent = () => {
-    return content.filter((item) => item.folderId === selectedFolder);
+    const requestContents = requests.filter(
+      (item) => item.folderId === selectedFolder
+    );
+    const otherContents = content.filter(
+      (item) => item.folderId === selectedFolder
+    );
+
+    const totalContent = [...requestContents, ...otherContents];
+
+    return totalContent;
   };
 
   const getFileIcon = (type: string) => {
@@ -522,7 +649,9 @@ const Library = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {folderContent.map((item) => {
-                const FileIcon = getFileIcon(item.type);
+                const FileIcon = getFileIcon(
+                  item.contentType ? item.contentType : item.type
+                );
                 return (
                   <div
                     key={item._id}
@@ -653,6 +782,48 @@ const Library = () => {
     );
   };
 
+  const handleContentStatus = async (e) => {
+    e.stopPropagation();
+  };
+
+  const onStatusChange = async (request: any, value) => {
+    try {
+      const newFormData = {
+        ...request,
+        status: value, // fallback to empty string if not found
+      };
+      setIsLoading(true);
+      const response = await axios.put(
+        `${URL}/api/content-request/update-request/${request?._id}`,
+        newFormData,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+            // Don't set Content-Type manually — Axios does it automatically for JSON
+          },
+        }
+      );
+      fetchAllContentAndRequests();
+    } catch (error) {
+      console.error("Error updating task status:", error);
+    }
+  };
+
+  const getStatusColor = (status: any) => {
+    switch (status) {
+      case "done":
+        return "bg-blue-50 text-blue-700";
+      case "approved":
+        return "bg-green-50 text-green-700";
+      case "pending":
+        return "bg-yellow-50 text-yellow-700";
+      case "rejected":
+        return "bg-red-50 text-red-700";
+      default:
+        return "bg-slate-50 text-slate-700";
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto pt-16 lg:pt-0">
       <div className="mb-8">
@@ -719,44 +890,177 @@ const Library = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {requests.map((request) => (
-                      <tr
-                        key={request._id}
-                        className="hover:bg-slate-50 cursor-pointer"
-                        onClick={() => setSelectedRequest(request)}
-                      >
-                        <td className="px-6 py-4">
-                          <div>
-                            <h4 className="text-sm font-medium text-slate-800">
-                              {request.title}
-                            </h4>
-                            <p className="text-sm text-slate-500">
-                              {request.description}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-600">
-                          {request.creatorName || "-"}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-600">
-                          {new Date(request.due_date).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              request.status === "pending"
-                                ? "bg-yellow-50 text-yellow-800"
-                                : request.status === "completed"
-                                ? "bg-green-50 text-green-800"
-                                : "bg-red-50 text-red-800"
-                            }`}
+                  <tbody className="divide-y divide-slate-100 bg-transparent">
+                    {requests.map((request, index) => (
+                      <React.Fragment key={request._id}>
+                        {/* Main row */}
+                        <tr
+                          className="hover:bg-slate-50 cursor-pointer"
+                          onClick={() => setSelectedRequest(request)}
+                        >
+                          <td className="px-6 py-4">
+                            <div>
+                              <h4 className="text-sm font-medium text-slate-800">
+                                {request.title}
+                              </h4>
+                              <p className="text-sm text-slate-500">
+                                {request.description}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-600">
+                            {request.creatorName || "-"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-600">
+                            {new Date(request.due_date).toLocaleDateString()}
+                          </td>
+                          <td
+                            className="px-6 py-4"
+                            onClick={handleContentStatus}
                           >
-                            {request.status.charAt(0).toUpperCase() +
-                              request.status.slice(1)}
-                          </span>
-                        </td>
-                      </tr>
+                            <select
+                              value={request.status}
+                              disabled={currentUser.accountType !== "owner"}
+                              onChange={(e) =>
+                                onStatusChange(request, e.target.value)
+                              }
+                              className={`text-xs px-2 py-1 rounded-full border-0 ${getStatusColor(
+                                request.status
+                              )}`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="approved">Approved</option>
+                              <option value="rejected">Rejected</option>
+                              <option value="done">Done</option>
+                            </select>
+                          </td>
+                        </tr>
+
+                        {/* Upload content row */}
+                        <tr>
+                          {Array.isArray(requests) &&
+                          requests.some(
+                            (item) =>
+                              Array.isArray(item?.content_urls) &&
+                              item.content_urls.length > 0
+                          ) ? (
+                            <td colSpan="4">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {requests.map((item, index) => {
+                                  if (
+                                    !item ||
+                                    typeof item !== "object" ||
+                                    !Array.isArray(item.content_urls) ||
+                                    item.content_urls.length === 0
+                                  )
+                                    return null;
+
+                                  const contentType = item.contentType || "";
+                                  const fileName =
+                                    item.fileName || "Unnamed File";
+                                  const createdAt = item.createdAt
+                                    ? new Date(
+                                        item.createdAt
+                                      ).toLocaleDateString()
+                                    : "Unknown Date";
+                                  const fileId = item._id || `unknown-${index}`;
+
+                                  let FileIcon;
+                                  try {
+                                    FileIcon = getFileIcon(contentType);
+                                  } catch (error) {
+                                    console.error(
+                                      "Error getting file icon:",
+                                      error
+                                    );
+                                    FileIcon = () => (
+                                      <span className="text-red-500">!</span>
+                                    );
+                                  }
+
+                                  return (
+                                    <div
+                                      key={fileId}
+                                      className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-500 transition-colors group"
+                                    >
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                          <FileIcon className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                                          <h3 className="text-sm font-medium text-slate-800 truncate">
+                                            {fileName}
+                                          </h3>
+                                        </div>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2">
+                                          <button
+                                            onClick={() =>
+                                              item && setSelectedContent(item)
+                                            }
+                                            className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                                          >
+                                            <Eye className="h-4 w-4" />
+                                          </button>
+                                          <button
+                                            onClick={() =>
+                                              item &&
+                                              handleDownloadContent(item)
+                                            }
+                                            className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                                          >
+                                            <Download className="h-4 w-4" />
+                                          </button>
+                                          <button
+                                            onClick={() =>
+                                              item?._id &&
+                                              handleDeleteContentRequest(
+                                                item._id
+                                              )
+                                            }
+                                            className="p-1 text-red-400 hover:text-red-600 transition-colors"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <p className="text-xs text-slate-500 truncate">
+                                        Added {createdAt}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                          ) : (
+                            <td colSpan="4" className="py-6">
+                              <div className="text-center bg-white rounded-2xl">
+                                <Upload className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                                <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                                  No content Uploaded
+                                </h3>
+                                <p className="text-slate-500 mb-6">
+                                  Upload content according to the request
+                                </p>
+                                <button
+                                  onClick={() => {
+                                    setSelectedContentRequest(request);
+                                    setShowUploadModal(true);
+                                    setUploadContentRequest(true);
+                                  }}
+                                  className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+                                >
+                                  Upload Content
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+
+                        {/* Spacer row */}
+                        {index !== requests.length - 1 && (
+                          <tr>
+                            <td colSpan="4" className="h-8 bg-[#f0f3f8]"></td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -786,7 +1090,12 @@ const Library = () => {
         <ContentPreviewModal
           content={selectedContent}
           onClose={() => setSelectedContent(null)}
-          onDelete={handleDeleteContent}
+          onDelete={
+            selectedContentRequest
+              ? handleDeleteContentRequestOnly
+              : handleDeleteContent
+          }
+          onDownload={handleDownloadContent}
         />
       )}
 
@@ -808,7 +1117,11 @@ const Library = () => {
       {showUploadModal && (
         <UploadModal
           onClose={() => setShowUploadModal(false)}
-          onUpload={handleUploadContent}
+          onUpload={
+            uploadContentRequest
+              ? handleUploadContentRequest
+              : handleUploadContent
+          }
         />
       )}
 
@@ -821,7 +1134,8 @@ const Library = () => {
           onSave={handleCreateRequest}
           creators={creators}
           folder={selectedFolderForRequest}
-          refreshRequests={fetchRequests}
+          refreshRequests={fetchAllContentAndRequests}
+          folders={folders}
         />
       )}
 

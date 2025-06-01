@@ -87,7 +87,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
       const now = new Date();
 
       if (now > expiry) {
-        console.log("🔴 Subscription is expired");
+        // console.log("🔴 Subscription is expired");
       } else {
         const timeDiff = expiry.getTime() - now.getTime();
         const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
@@ -117,7 +117,10 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
         }
       );
     } catch (error: any) {
-      if (error.response.data.message === "Token has expired.") {
+      if (
+        error.response.data.message ===
+        "Invalid or expired token. Please log in again."
+      ) {
         console.log("🔴 Token has expired");
         dispatch(signOutUser());
         navigate("/sign");
@@ -126,10 +129,19 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
   };
   useEffect(() => {
     if (currentUser) {
+      // Call immediately on mount
       checkTokenExpiration();
       checkSubscriptionExpiration();
+
+      const interval = setInterval(() => {
+        checkTokenExpiration();
+        checkSubscriptionExpiration();
+      }, 30000); // 30 seconds
+
+      return () => clearInterval(interval); // Cleanup on unmount
     }
   }, [currentUser, navigate]);
+
   return (
     <>
       {/* Existing Sidebar */}

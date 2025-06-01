@@ -16,6 +16,7 @@ interface RequestModalProps {
   creators: { _id: string; name: string }[];
   folder?: { id: string; name: string } | null;
   refreshRequests: () => void;
+  folders: { _id: string; name: string }[];
 }
 
 const RequestModal: React.FC<RequestModalProps> = ({
@@ -24,6 +25,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
   creators,
   folder,
   refreshRequests,
+  folders,
 }) => {
   const { currentUser } = useAppSelector((state) => state.user);
 
@@ -32,7 +34,11 @@ const RequestModal: React.FC<RequestModalProps> = ({
   const [description, setDescription] = useState(
     folder ? `Folder: ${folder.name}\n\n` : ""
   );
+  console.log("folder", folders);
   const [dueDate, setDueDate] = useState("");
+
+  const [folderName, setFolderName] = useState("");
+  const [folderId, setFolderId] = useState("");
   const [selectedCreator, setSelectedCreator] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -49,6 +55,12 @@ const RequestModal: React.FC<RequestModalProps> = ({
         toast.error("Creator not found");
         return;
       }
+      const folder = folders.find((i) => i._id === folderId);
+      if (!folder) {
+        toast.error("Folder not found");
+        return;
+      }
+
       const requiredId =
         currentUser?.ownerId === "Agency Owner itself"
           ? currentUser?.id
@@ -66,6 +78,8 @@ const RequestModal: React.FC<RequestModalProps> = ({
           formData.append("due_date", dueDate);
           formData.append("creatorName", creator.name);
           formData.append("ownerId", requiredId);
+          formData.append("folderName", folder.name);
+          formData.append("folderId", folderId);
           if (selectedCreator) {
             formData.append("creatorId", selectedCreator);
           }
@@ -202,6 +216,26 @@ const RequestModal: React.FC<RequestModalProps> = ({
                 required
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Folder 📂 *
+              </label>
+              <select
+                name="creatorId"
+                required
+                value={folderId}
+                onChange={(e) => setFolderId(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Folder</option>
+                {folders.map((folder) => (
+                  <option key={folder._id} value={folder._id}>
+                    {folder.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
