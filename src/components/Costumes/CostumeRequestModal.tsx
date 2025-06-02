@@ -76,6 +76,8 @@ const CostumeRequestModal: React.FC<CostumeRequestModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log(formData);
+
       setIsLoading(true);
       const requiredId =
         currentUser?.ownerId === "Agency Owner itself"

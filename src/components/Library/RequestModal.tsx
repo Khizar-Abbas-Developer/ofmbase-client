@@ -223,7 +223,7 @@ const RequestModal: React.FC<RequestModalProps> = ({
                 Folder 📂 *
               </label>
               <select
-                name="creatorId"
+                name="folderId"
                 required
                 value={folderId}
                 onChange={(e) => setFolderId(e.target.value)}
