@@ -127,7 +127,6 @@ const CreatorModal: React.FC<CreatorModalProps> = ({
   const handleEditCreator = async (e) => {
     e.preventDefault();
     try {
-      console.log(creator);
 
       setIsLoading(true);
       const dataToSend = {

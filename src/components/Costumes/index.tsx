@@ -344,8 +344,6 @@ const Costumes: React.FC<CostumesProps> = () => {
       });
   };
 
-  console.log(requests);
-
   const handleDeleteContentRequest = async (id: string) => {
     try {
       setIsLoading(true);

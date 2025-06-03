@@ -34,7 +34,6 @@ const RequestModal: React.FC<RequestModalProps> = ({
   const [description, setDescription] = useState(
     folder ? `Folder: ${folder.name}\n\n` : ""
   );
-  console.log("folder", folders);
   const [dueDate, setDueDate] = useState("");
 
   const [folderName, setFolderName] = useState("");
