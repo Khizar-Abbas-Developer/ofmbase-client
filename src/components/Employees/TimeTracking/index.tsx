@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, Plus } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
-import TimeEntryModal from './TimeEntryModal';
-import TimeTrackingTable from './TimeTrackingTable';
-import { Employee } from '../index';
+import React, { useState, useEffect } from "react";
+import { Clock, Plus } from "lucide-react";
+import { supabase } from "../../../lib/supabase";
+import TimeEntryModal from "./TimeEntryModal";
+import TimeTrackingTable from "./TimeTrackingTable";
+import { Employee } from "../index";
+import axios from "axios";
+import { useAppSelector } from "../../../redux/hooks";
 
 interface TimeEntry {
   id: string;
@@ -22,13 +24,15 @@ interface TimeTrackingProps {
 }
 
 const TimeTracking: React.FC<TimeTrackingProps> = ({ employees }) => {
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+  const { currentUser } = useAppSelector((state) => state.user);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
-  const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('week');
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedEmployee, setSelectedEmployee] = useState<string>("all");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("week");
 
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     fetchTimeEntries();
   }, []);
@@ -36,32 +40,32 @@ const TimeTracking: React.FC<TimeTrackingProps> = ({ employees }) => {
   const fetchTimeEntries = async () => {
     try {
       setIsLoading(true);
-      const { data: entries, error: entriesError } = await supabase
-        .from('time_entries')
-        .select(`
-          *,
-          creator_sales (
-            creator_id,
-            amount
-          )
-        `)
-        .order('date', { ascending: false });
-
-      if (entriesError) throw entriesError;
-
-      setTimeEntries(entries || []);
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser?.id
+          : currentUser?.ownerId;
+      const response = await axios.get(
+        `${URL}/api/time-tracking/fetch-time-tracking/${requiredId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+        }
+      );
+      setTimeEntries(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching time entries:', error);
+      console.error("Error fetching time entries:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAddTimeEntry = async (entry: Omit<TimeEntry, 'id'>) => {
+  const handleAddTimeEntry = async (entry: Omit<TimeEntry, "id">) => {
     try {
       // First, create the time entry
       const { data: timeEntry, error: timeEntryError } = await supabase
-        .from('time_entries')
+        .from("time_entries")
         .insert({
           date: entry.date,
           employee_id: entry.employee_id,
@@ -75,14 +79,14 @@ const TimeTracking: React.FC<TimeTrackingProps> = ({ employees }) => {
 
       // Then, create the creator sales records
       if (entry.creator_sales && entry.creator_sales.length > 0) {
-        const creatorSalesData = entry.creator_sales.map(sale => ({
+        const creatorSalesData = entry.creator_sales.map((sale) => ({
           time_entry_id: timeEntry.id,
           creator_id: sale.creator_id,
           amount: sale.amount,
         }));
 
         const { error: salesError } = await supabase
-          .from('creator_sales')
+          .from("creator_sales")
           .insert(creatorSalesData);
 
         if (salesError) throw salesError;
@@ -92,7 +96,7 @@ const TimeTracking: React.FC<TimeTrackingProps> = ({ employees }) => {
       fetchTimeEntries();
       setIsModalOpen(false);
     } catch (error) {
-      console.error('Error adding time entry:', error);
+      console.error("Error adding time entry:", error);
     }
   };
 
@@ -100,35 +104,35 @@ const TimeTracking: React.FC<TimeTrackingProps> = ({ employees }) => {
     try {
       // Update the time entry
       const { error: timeEntryError } = await supabase
-        .from('time_entries')
+        .from("time_entries")
         .update({
           date: entry.date,
           employee_id: entry.employee_id,
           hours: entry.hours,
           description: entry.description,
         })
-        .eq('id', entry.id);
+        .eq("id", entry.id);
 
       if (timeEntryError) throw timeEntryError;
 
       // Delete existing creator sales
       const { error: deleteError } = await supabase
-        .from('creator_sales')
+        .from("creator_sales")
         .delete()
-        .eq('time_entry_id', entry.id);
+        .eq("time_entry_id", entry.id);
 
       if (deleteError) throw deleteError;
 
       // Create new creator sales records
       if (entry.creator_sales && entry.creator_sales.length > 0) {
-        const creatorSalesData = entry.creator_sales.map(sale => ({
+        const creatorSalesData = entry.creator_sales.map((sale) => ({
           time_entry_id: entry.id,
           creator_id: sale.creator_id,
           amount: sale.amount,
         }));
 
         const { error: salesError } = await supabase
-          .from('creator_sales')
+          .from("creator_sales")
           .insert(creatorSalesData);
 
         if (salesError) throw salesError;
@@ -139,27 +143,29 @@ const TimeTracking: React.FC<TimeTrackingProps> = ({ employees }) => {
       setIsModalOpen(false);
       setSelectedEntry(null);
     } catch (error) {
-      console.error('Error updating time entry:', error);
+      console.error("Error updating time entry:", error);
     }
   };
 
   const handleDeleteTimeEntry = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('time_entries')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
+      const response = await axios.delete(
+        `${URL}/api/time-tracking/delete-time-tracking/${id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+        }
+      );
       fetchTimeEntries();
     } catch (error) {
-      console.error('Error deleting time entry:', error);
+      console.error("Error deleting time entry:", error);
     }
   };
 
-  const filteredEntries = timeEntries.filter(entry => {
-    if (selectedEmployee !== 'all' && entry.employee_id !== selectedEmployee) {
+  const filteredEntries = timeEntries.filter((entry) => {
+    if (selectedEmployee !== "all" && entry.employee_id !== selectedEmployee) {
       return false;
     }
 
@@ -167,12 +173,12 @@ const TimeTracking: React.FC<TimeTrackingProps> = ({ employees }) => {
     const now = new Date();
 
     switch (selectedPeriod) {
-      case 'today':
+      case "today":
         return entryDate.toDateString() === now.toDateString();
-      case 'week':
+      case "week":
         const weekAgo = new Date(now.setDate(now.getDate() - 7));
         return entryDate >= weekAgo;
-      case 'month':
+      case "month":
         const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
         return entryDate >= monthAgo;
       default:
@@ -198,7 +204,7 @@ const TimeTracking: React.FC<TimeTrackingProps> = ({ employees }) => {
             className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Employees</option>
-            {employees.map(employee => (
+            {employees.map((employee) => (
               <option key={employee.id} value={employee.id}>
                 {employee.name}
               </option>
@@ -230,8 +236,12 @@ const TimeTracking: React.FC<TimeTrackingProps> = ({ employees }) => {
           <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
             <Clock className="h-8 w-8 text-blue-600" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-800 mb-2">No time entries yet</h3>
-          <p className="text-slate-500 mb-6">Start tracking time for your employees</p>
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">
+            No time entries yet
+          </h3>
+          <p className="text-slate-500 mb-6">
+            Start tracking time for your employees
+          </p>
           <button
             onClick={() => setIsModalOpen(true)}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
@@ -261,6 +271,7 @@ const TimeTracking: React.FC<TimeTrackingProps> = ({ employees }) => {
             setIsModalOpen(false);
             setSelectedEntry(null);
           }}
+          refresh={fetchTimeEntries}
           onSave={selectedEntry ? handleEditTimeEntry : handleAddTimeEntry}
           entry={selectedEntry}
         />

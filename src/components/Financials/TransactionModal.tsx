@@ -1,18 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { Creator } from '../../App';
-import { Employee } from '../Employees';
+import React, { useState, useEffect } from "react";
+import { X } from "lucide-react";
+import { Creator } from "../../App";
+import { Employee } from "../Employees";
+import { useAppSelector } from "../../redux/hooks";
+import { ClipLoader } from "react-spinners";
 
 interface Transaction {
   id: string;
   date: string;
-  type: 'income' | 'expense';
+  type: "income" | "expense";
   category: string;
   entity: string;
   description: string;
   amount: number;
   creator_id?: string;
   employee_id?: string;
+  _id: string;
 }
 
 interface TransactionModalProps {
@@ -30,58 +33,73 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
   creators,
   employees,
 }) => {
+  const [loading, setLoading] = useState(false);
+  const { currentUser } = useAppSelector((state) => state.user);
+
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    type: 'income',
-    category: '',
-    creator_id: '',
-    employee_id: '',
-    amount: '',
-    description: '',
+    date: new Date().toISOString().split("T")[0],
+    type: "income",
+    category: "",
+    creator_id: "",
+    employee_id: "",
+    amount: "",
+    description: "",
   });
 
   useEffect(() => {
     if (transaction) {
       setFormData({
-        date: new Date(transaction.date).toISOString().split('T')[0],
+        date: new Date(transaction.date).toISOString().split("T")[0],
         type: transaction.type,
         category: transaction.category,
-        creator_id: transaction.creator_id || '',
-        employee_id: transaction.employee_id || '',
+        creator_id: transaction.creator_id || "",
+        employee_id: transaction.employee_id || "",
         amount: transaction.amount.toString(),
         description: transaction.description,
       });
     }
   }, [transaction]);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setLoading(true);
+    const requiredId =
+      currentUser?.ownerId === "Agency Owner itself"
+        ? currentUser?.id
+        : currentUser?.ownerId;
     const transactionData = {
       id: transaction?.id || Date.now().toString(),
       date: new Date(formData.date).toISOString(),
-      type: formData.type as 'income' | 'expense',
+      type: formData.type as "income" | "expense",
       category: formData.category,
-      entity: formData.creator_id ? 'creator' : formData.employee_id ? 'employee' : 'agency',
+      entity: formData.creator_id
+        ? "creator"
+        : formData.employee_id
+        ? "employee"
+        : "agency",
       description: formData.description,
       amount: parseFloat(formData.amount),
+      ownerId: requiredId,
       creator_id: formData.creator_id || undefined,
       employee_id: formData.employee_id || undefined,
+      _id: transaction?._id,
     };
 
-    onSave(transactionData);
+    await onSave(transactionData); // <-- Ensure onSave is a promise-returning function
+    onClose(); // Optional: Close the modal after successful save    } catch (error) {
+    setLoading(false);
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
-
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
@@ -89,7 +107,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
         <div className="relative bg-white rounded-2xl max-w-lg w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
             <h2 className="text-xl font-semibold text-slate-800">
-              {transaction ? 'Edit Transaction' : 'Add Transaction'}
+              {transaction ? "Edit Transaction" : "Add Transaction"}
             </h2>
             <button
               onClick={onClose}
@@ -164,8 +182,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select creator</option>
-                {creators.map(creator => (
-                  <option key={creator.id} value={creator.id}>{creator.name}</option>
+                {creators.map((creator) => (
+                  <option key={creator._id} value={creator._id}>
+                    {creator.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -181,8 +201,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select employee</option>
-                {employees.map(employee => (
-                  <option key={employee.id} value={employee.id}>{employee.name}</option>
+                {employees.map((employee) => (
+                  <option key={employee._id} value={employee._id}>
+                    {employee.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -227,9 +249,19 @@ const TransactionModal: React.FC<TransactionModalProps> = ({
               </button>
               <button
                 type="submit"
+                disabled={loading}
                 className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors duration-150"
               >
-                {transaction ? 'Save Changes' : 'Add Transaction'}
+                {loading ? (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>{transaction ? "Save Changes" : "Add Transaction"}</p>
+                    <ClipLoader size={14} color="white" />
+                  </div>
+                ) : (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>{transaction ? "Save Changes" : "Add Transaction"}</p>
+                  </div>
+                )}
               </button>
             </div>
           </form>

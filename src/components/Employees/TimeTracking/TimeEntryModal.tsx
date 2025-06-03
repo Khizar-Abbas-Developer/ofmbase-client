@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
-import { Employee } from '../index';
-import { supabase } from '../../../lib/supabase';
+import React, { useState, useEffect } from "react";
+import { X, Plus, Trash2 } from "lucide-react";
+import { Employee } from "../index";
+import { useAppSelector } from "../../../redux/hooks";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { ClipLoader } from "react-spinners";
 
 export interface TimeEntry {
   id: string;
@@ -20,6 +23,7 @@ interface TimeEntryModalProps {
   onClose: () => void;
   onSave: (entry: TimeEntry) => void;
   entry?: TimeEntry | null;
+  refresh: () => void;
 }
 
 const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
@@ -27,23 +31,27 @@ const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
   onClose,
   onSave,
   entry,
+  refresh,
 }) => {
+  const [loading, setLoding] = useState(false);
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+  const { currentUser } = useAppSelector((state) => state.user);
   const [formData, setFormData] = useState<Partial<TimeEntry>>({
-    date: new Date().toISOString().split('T')[0],
-    employee_id: '',
+    date: new Date().toISOString().split("T")[0],
+    employee_id: "",
     hours: 0,
-    description: '',
+    description: "",
     creator_sales: [],
   });
   const [creators, setCreators] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     fetchCreators();
-    
+
     // Initialize form with entry data if editing
     if (entry) {
       setFormData({
-        date: new Date(entry.date).toISOString().split('T')[0],
+        date: new Date(entry.date).toISOString().split("T")[0],
         employee_id: entry.employee_id,
         hours: entry.hours,
         description: entry.description,
@@ -54,62 +62,120 @@ const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
 
   const fetchCreators = async () => {
     try {
-      const { data, error } = await supabase
-        .from('creators')
-        .select('id, name')
-        .eq('status', 'active')
-        .order('name');
-
-      if (error) throw error;
-
-      setCreators(data || []);
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser?.id
+          : currentUser?.ownerId;
+      const response = await axios.get(
+        `${URL}/api/creator/get-creators/${requiredId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+        }
+      );
+      setCreators(response.data.creators || []);
     } catch (error) {
-      console.error('Error fetching creators:', error);
+      console.error("Error fetching creators:", error);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.employee_id || !formData.date) return;
-
-    onSave({
-      id: entry?.id || Date.now().toString(),
-      date: formData.date,
-      employee_id: formData.employee_id,
-      hours: formData.hours || 0,
-      description: formData.description || '',
-      creator_sales: formData.creator_sales || [],
-    });
+    try {
+      setLoding(true);
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser?.id
+          : currentUser?.ownerId;
+      if (!formData.employee_id || !formData.date) return;
+      const dataToSend = { ...formData, ownerId: requiredId };
+      await axios.post(
+        `${URL}/api/time-tracking/create-time-tracking`,
+        dataToSend,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+        }
+      );
+      toast.success("Entry created successfully");
+      onClose();
+      refresh();
+    } catch (error) {
+      console.error("Error creating time tracking entry:", error);
+    } finally {
+      setLoding(false);
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const updateEntry = async (e: React.FocusEvent) => {
+    e.preventDefault();
+    try {
+      setLoding(true);
+      const response = await axios.patch(
+        `${URL}/api/time-tracking/update-time-tracking/${entry._id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+        }
+      );
+      toast.success("Entry Updated successfully");
+      onClose();
+      refresh();
+    } catch (error) {
+      console.error("Error updating time tracking entry:", error);
+    } finally {
+      setLoding(false);
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === 'hours' ? parseFloat(value) : value,
+      [name]:
+        name === "hours" ? (value === "" ? "" : parseFloat(value)) : value,
     }));
   };
 
-  const handleCreatorSaleChange = (index: number, field: 'creator_id' | 'amount', value: string) => {
-    setFormData(prev => {
+  const handleCreatorSaleChange = (
+    index: number,
+    field: "creator_id" | "amount",
+    value: string
+  ) => {
+    setFormData((prev) => {
       const creatorSales = [...(prev.creator_sales || [])];
       creatorSales[index] = {
         ...creatorSales[index],
-        [field]: field === 'amount' ? parseFloat(value) : value,
+        [field]: field === "amount" ? parseFloat(value) : value,
       };
       return { ...prev, creator_sales: creatorSales };
     });
   };
 
   const addCreatorSale = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      creator_sales: [...(prev.creator_sales || []), { creator_id: '', amount: 0 }],
+      creator_sales: [
+        ...(prev.creator_sales || []),
+        { creator_id: "", amount: 0 },
+      ],
     }));
   };
 
   const removeCreatorSale = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       creator_sales: (prev.creator_sales || []).filter((_, i) => i !== index),
     }));
@@ -122,7 +188,7 @@ const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
         <div className="relative bg-white rounded-2xl max-w-lg w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
             <h2 className="text-xl font-semibold text-slate-800">
-              {entry ? 'Edit Time Entry' : 'New Time Entry'}
+              {entry ? "Edit Time Entry" : "New Time Entry"}
             </h2>
             <button
               onClick={onClose}
@@ -132,7 +198,10 @@ const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form
+            onSubmit={entry ? updateEntry : handleSubmit}
+            className="p-6 space-y-6"
+          >
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Date
@@ -159,8 +228,8 @@ const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select an employee</option>
-                {employees.map(employee => (
-                  <option key={employee.id} value={employee.id}>
+                {employees.map((employee) => (
+                  <option key={employee._id} value={employee._id}>
                     {employee.name}
                   </option>
                 ))}
@@ -212,19 +281,25 @@ const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
                   Add Creator
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 {formData.creator_sales?.map((sale, index) => (
                   <div key={index} className="flex items-start gap-4">
                     <div className="flex-1">
                       <select
                         value={sale.creator_id}
-                        onChange={(e) => handleCreatorSaleChange(index, 'creator_id', e.target.value)}
+                        onChange={(e) =>
+                          handleCreatorSaleChange(
+                            index,
+                            "creator_id",
+                            e.target.value
+                          )
+                        }
                         className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select creator</option>
-                        {creators.map(creator => (
-                          <option key={creator.id} value={creator.id}>
+                        {creators.map((creator) => (
+                          <option key={creator._id} value={creator.id}>
                             {creator.name}
                           </option>
                         ))}
@@ -236,8 +311,14 @@ const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
                         min="0"
                         step="0.01"
                         placeholder="Sales amount"
-                        value={sale.amount || ''}
-                        onChange={(e) => handleCreatorSaleChange(index, 'amount', e.target.value)}
+                        value={sale.amount || ""}
+                        onChange={(e) =>
+                          handleCreatorSaleChange(
+                            index,
+                            "amount",
+                            e.target.value
+                          )
+                        }
                         className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
@@ -263,9 +344,17 @@ const TimeEntryModal: React.FC<TimeEntryModalProps> = ({
               </button>
               <button
                 type="submit"
+                disabled={loading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
               >
-                {entry ? 'Save Changes' : 'Create Entry'}
+                {loading ? (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>{entry ? "Save Changes" : "Create Entry"}</p>
+                    <ClipLoader size={14} />
+                  </div>
+                ) : (
+                  <p>{entry ? "Save Changes" : "Create Entry"}</p>
+                )}
               </button>
             </div>
           </form>
