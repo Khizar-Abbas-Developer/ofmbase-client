@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { Creator } from '../../App';
+import React, { useState, useEffect } from "react";
+import { X } from "lucide-react";
+import { Creator } from "../../App";
+import { ClipLoader } from "react-spinners";
 
 interface Credential {
   id: string;
@@ -8,16 +9,16 @@ interface Credential {
   username: string;
   password: string;
   notes?: string;
-  type: 'agency' | 'creator';
+  type: "agency" | "creator";
   creator_id?: string | null;
 }
 
 interface CredentialModalProps {
-  type: 'agency' | 'creator';
+  type: "agency" | "creator";
   creators: Creator[];
   credential?: Credential | null;
   onClose: () => void;
-  onSave: (credential: Credential | Omit<Credential, 'id'>) => void;
+  onSave: (credential: Credential | Omit<Credential, "id">) => void;
 }
 
 const CredentialModal: React.FC<CredentialModalProps> = ({
@@ -27,11 +28,12 @@ const CredentialModal: React.FC<CredentialModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    platform: '',
-    username: '',
-    password: '',
-    notes: '',
+    platform: "",
+    username: "",
+    password: "",
+    notes: "",
     creator_id: null as string | null,
   });
 
@@ -41,35 +43,45 @@ const CredentialModal: React.FC<CredentialModalProps> = ({
         platform: credential.platform,
         username: credential.username,
         password: credential.password,
-        notes: credential.notes || '',
+        notes: credential.notes || "",
         creator_id: credential.creator_id || null,
       });
     }
   }, [credential]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    try {
+      const credentialData = {
+        ...formData,
+        type,
+      };
 
-    const credentialData = {
-      ...formData,
-      type,
-    };
-
-    if (credential) {
-      onSave({
-        ...credentialData,
-        id: credential.id,
-      });
-    } else {
-      onSave(credentialData);
+      if (credential) {
+        await onSave({
+          ...credentialData,
+          _id: credential._id,
+        });
+      } else {
+        await onSave(credentialData);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value === '' ? null : value,
+      [name]: value === "" ? null : value,
     }));
   };
 
@@ -80,7 +92,8 @@ const CredentialModal: React.FC<CredentialModalProps> = ({
         <div className="relative bg-white rounded-2xl max-w-md w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
             <h2 className="text-xl font-semibold text-slate-800">
-              {credential ? 'Edit' : 'Add'} {type === 'agency' ? 'Agency' : 'Creator'} Credentials
+              {credential ? "Edit" : "Add"}{" "}
+              {type === "agency" ? "Agency" : "Creator"} Credentials
             </h2>
             <button
               onClick={onClose}
@@ -91,7 +104,7 @@ const CredentialModal: React.FC<CredentialModalProps> = ({
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {type === 'creator' && (
+            {type === "creator" && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Creator
@@ -99,13 +112,15 @@ const CredentialModal: React.FC<CredentialModalProps> = ({
                 <select
                   name="creator_id"
                   required
-                  value={formData.creator_id || ''}
+                  value={formData.creator_id || ""}
                   onChange={handleChange}
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select creator</option>
-                  {creators.map(creator => (
-                    <option key={creator.id} value={creator.id}>{creator.name}</option>
+                  {creators.map((creator) => (
+                    <option key={creator._id} value={creator._id}>
+                      {creator.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -178,9 +193,19 @@ const CredentialModal: React.FC<CredentialModalProps> = ({
               </button>
               <button
                 type="submit"
+                disabled={loading}
                 className="px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors duration-150"
               >
-                {credential ? 'Save Changes' : 'Add Credentials'}
+                {loading ? (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>{credential ? "Save Changes" : "Add Credentials"}</p>
+                    <ClipLoader size={14} color="white" />
+                  </div>
+                ) : (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>{credential ? "Save Changes" : "Add Credentials"}</p>
+                  </div>
+                )}
               </button>
             </div>
           </form>
