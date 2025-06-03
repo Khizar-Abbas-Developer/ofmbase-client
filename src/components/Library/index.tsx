@@ -2,16 +2,17 @@ import React, { useState, useEffect } from "react";
 import {
   Plus,
   Folder,
-  FileText,
   Upload,
   ChevronLeft,
   Image,
   Video,
-  File,
   Download,
   Trash2,
   Eye,
+  TextIcon,
 } from "lucide-react";
+import { File, ImageIcon, VideoIcon, FileText, FilePdf } from "lucide-react";
+
 import { supabase } from "../../lib/supabase";
 import FolderModal from "./FolderModal";
 import UploadModal from "./UploadModal";
@@ -180,12 +181,22 @@ const Library = () => {
       const counts: Record<string, number> = {};
 
       [...contentItems, ...contentRequests].forEach((item: any) => {
-        if (item.folderId) {
+        const isValid =
+          item?._id &&
+          item?.fileName &&
+          (item?.contentType || item?.type) &&
+          item?.folderId;
+
+        if (isValid) {
           counts[item.folderId] = (counts[item.folderId] || 0) + 1;
         }
       });
 
-      setFolderContentCounts(counts);
+      // Only set folder content counts if we have at least one valid item
+      const hasValidItems = Object.keys(counts).length > 0;
+      if (hasValidItems) {
+        setFolderContentCounts(counts);
+      }
     } catch (error) {
       console.error("Error fetching content or requests:", error);
     } finally {
@@ -564,20 +575,35 @@ const Library = () => {
     const requestContents = requests.filter(
       (item) => item.folderId === selectedFolder
     );
+
     const otherContents = content.filter(
       (item) => item.folderId === selectedFolder
     );
-
     const totalContent = [...requestContents, ...otherContents];
 
     return totalContent;
   };
+  const DefaultFileIcon = () => (
+    <svg
+      className="h-5 w-5 text-gray-400"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7.414A2 2 0 0017.414 6L14 2.586A2 2 0 0012.586 2H4z" />
+    </svg>
+  );
 
   const getFileIcon = (type: string) => {
-    if (type.startsWith("image/")) return Image;
-    if (type.startsWith("video/")) return Video;
-    return File;
+    if (!type || typeof type !== "string") return DefaultFileIcon;
+
+    if (type.startsWith("image/")) return ImageIcon;
+    if (type.startsWith("video/")) return VideoIcon;
+    if (type.startsWith("application/pdf")) return PdfIcon;
+    if (type.startsWith("text/")) return TextIcon;
+
+    return DefaultFileIcon;
   };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -589,7 +615,6 @@ const Library = () => {
   const renderLibraryContent = () => {
     const currentFolder = getCurrentFolder();
     const folderContent = getFolderContent();
-
     if (selectedFolder) {
       return (
         <div className="space-y-6">
@@ -629,8 +654,75 @@ const Library = () => {
               </p>
             )}
           </div>
+          {folderContent?.filter(
+            (item) =>
+              item?._id && item?.fileName && (item?.contentType || item?.type)
+          ).length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {folderContent
+                .filter(
+                  (item) =>
+                    item?._id &&
+                    item?.fileName &&
+                    (item?.contentType || item?.type)
+                )
+                .map((item) => {
+                  const fileType = item.contentType || item.type;
+                  const FileIcon = getFileIcon(fileType);
 
-          {folderContent.length === 0 ? (
+                  return (
+                    <div
+                      key={item._id}
+                      className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-500 transition-colors group"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          {FileIcon ? (
+                            <FileIcon className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                          ) : (
+                            <span className="h-5 w-5 flex-shrink-0 text-slate-400">
+                              ?
+                            </span>
+                          )}
+                          <h3 className="text-sm font-medium text-slate-800 truncate">
+                            {item.fileName}
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2">
+                          <button
+                            onClick={() => setSelectedContent(item)}
+                            className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                            aria-label="View"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDownloadContent(item)}
+                            className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                            aria-label="Download"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteContent(item._id)}
+                            className="p-1 text-red-400 hover:text-red-600 transition-colors"
+                            aria-label="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 truncate">
+                        Added{" "}
+                        {item?.createdAt
+                          ? new Date(item.createdAt).toLocaleDateString()
+                          : "Unknown Date"}
+                      </p>
+                    </div>
+                  );
+                })}
+            </div>
+          ) : (
             <div className="text-center py-12 bg-white rounded-2xl">
               <Upload className="h-12 w-12 text-slate-300 mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-slate-800 mb-2">
@@ -645,53 +737,6 @@ const Library = () => {
               >
                 Upload Content
               </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {folderContent.map((item) => {
-                const FileIcon = getFileIcon(
-                  item.contentType ? item.contentType : item.type
-                );
-                return (
-                  <div
-                    key={item._id}
-                    className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-500 transition-colors group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <FileIcon className="h-5 w-5 text-blue-500 flex-shrink-0" />
-                        <h3 className="text-sm font-medium text-slate-800 truncate">
-                          {item.fileName}
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2">
-                        <button
-                          onClick={() => setSelectedContent(item)}
-                          className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDownloadContent(item)}
-                          className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteContent(item._id)}
-                          className="p-1 text-red-400 hover:text-red-600 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-500 truncate">
-                      Added{" "}
-                      {new Date(item.createdAt || "").toLocaleDateString()}
-                    </p>
-                  </div>
-                );
-              })}
             </div>
           )}
         </div>
