@@ -99,7 +99,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
         // );
       }
     } else {
-      console.log("❌ Invalid subscription dates.");
+      // console.log(" Invalid subscription dates.");
     }
   };
 
