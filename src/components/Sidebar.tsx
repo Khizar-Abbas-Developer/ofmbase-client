@@ -11,7 +11,7 @@ import {
   settingsSection,
 } from "../constants";
 import { useEffect } from "react";
-import axios from "axios";
+import axios, { all } from "axios";
 
 const Sidebar = ({ onClose }: { onClose?: () => void }) => {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
@@ -19,7 +19,6 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const allowedModule = currentUser?.accessibleModules || [];
-
   const handleNavClick = () => onClose?.();
 
   const handleSignOut = () => {

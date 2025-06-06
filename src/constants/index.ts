@@ -8,6 +8,8 @@ import {
   DollarSign,
   Key,
   Settings,
+  FileText,
+  FileCheck,
 } from "lucide-react";
 
 export const dashboardSection = [
@@ -47,6 +49,18 @@ export const financialSection = [
     name: "Financials",
     icon: DollarSign,
     path: "/financials",
+  },
+  {
+    relation: "documents",
+    name: "Documents",
+    icon: FileText,
+    path: "/documents",
+  },
+  {
+    relation: "receiptsAndInvoices",
+    name: "Receipts & Invoices",
+    icon: FileCheck,
+    path: "/receipts-and-invoices",
   },
 ];
 

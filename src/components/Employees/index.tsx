@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Plus, Search, UserCircle, Clock } from "lucide-react";
+import {
+  Plus,
+  Search,
+  UserCircle,
+  Clock,
+  DollarSign,
+  Gift,
+} from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import EmployeeModal from "./EmployeeModal";
 import EmployeeCard from "./EmployeeCard";
@@ -7,6 +14,8 @@ import EmployeeDetailModal from "./EmployeeDetailModal";
 import TimeTracking from "./TimeTracking";
 import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 import axios from "axios";
+import Payments from "./Payments";
+import Bonuses from "./Bonuses";
 
 export interface Employee {
   _id: string;
@@ -219,6 +228,28 @@ const Employees = () => {
               <Clock className="h-4 w-4" />
               Time Tracking
             </button>
+            <button
+              onClick={() => setActiveTab("payments")}
+              className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 text-sm font-medium ${
+                activeTab === "payments"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+              }`}
+            >
+              <DollarSign className="h-4 w-4" />
+              Payments
+            </button>
+            <button
+              onClick={() => setActiveTab("bonuses")}
+              className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 text-sm font-medium ${
+                activeTab === "bonuses"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+              }`}
+            >
+              <Gift className="h-4 w-4" />
+              Bonuses
+            </button>
           </nav>
         </div>
       </div>
@@ -261,8 +292,12 @@ const Employees = () => {
             </div>
           )}
         </>
-      ) : (
+      ) : activeTab === "timeTracking" ? (
         <TimeTracking employees={employees} />
+      ) : activeTab === "payments" ? (
+        <Payments employees={employees} />
+      ) : (
+        <Bonuses employees={employees} />
       )}
 
       {isModalOpen && (
