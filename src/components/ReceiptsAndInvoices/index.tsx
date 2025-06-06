@@ -5,7 +5,7 @@ import ReceiptsTab from './ReceiptsTab';
 import InvoicesTab from './InvoicesTab';
 import SettingsModal from './SettingsModal';
 
-const Receipts = () => {
+const Test = () => {
   const [showSettings, setShowSettings] = useState(false);
 
   return (
@@ -45,4 +45,4 @@ const Receipts = () => {
   );
 };
 
-export default Receipts;
+export default Test;

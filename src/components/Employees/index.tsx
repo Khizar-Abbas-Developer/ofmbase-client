@@ -132,7 +132,7 @@ const Employees = () => {
       if (error) throw error;
 
       setEmployees((prev) =>
-        prev.map((e) => (e.id === employee.id ? employee : e))
+        prev.map((e) => (e._id === employee._id ? employee : e))
       );
       setIsModalOpen(false);
       setSelectedEmployee(null);
@@ -228,7 +228,7 @@ const Employees = () => {
               <Clock className="h-4 w-4" />
               Time Tracking
             </button>
-            <button
+            {/* <button
               onClick={() => setActiveTab("payments")}
               className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 text-sm font-medium ${
                 activeTab === "payments"
@@ -249,7 +249,7 @@ const Employees = () => {
             >
               <Gift className="h-4 w-4" />
               Bonuses
-            </button>
+            </button> */}
           </nav>
         </div>
       </div>
@@ -295,9 +295,11 @@ const Employees = () => {
       ) : activeTab === "timeTracking" ? (
         <TimeTracking employees={employees} />
       ) : activeTab === "payments" ? (
-        <Payments employees={employees} />
+        <></>
       ) : (
-        <Bonuses employees={employees} />
+        // <Payments employees={employees} />
+        <></>
+        // <Bonuses employees={employees} />
       )}
 
       {isModalOpen && (
