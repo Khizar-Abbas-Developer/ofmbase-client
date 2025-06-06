@@ -34,9 +34,9 @@ export interface Employee {
 const Employees = () => {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const { currentUser } = useAppSelector((state) => state.user);
-  const [activeTab, setActiveTab] = useState<"employees" | "timeTracking">(
-    "employees"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "employees" | "timeTracking" | "bonuses" | "payments"
+  >("employees");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
@@ -228,7 +228,7 @@ const Employees = () => {
               <Clock className="h-4 w-4" />
               Time Tracking
             </button>
-            {/* <button
+            <button
               onClick={() => setActiveTab("payments")}
               className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 text-sm font-medium ${
                 activeTab === "payments"
@@ -249,7 +249,7 @@ const Employees = () => {
             >
               <Gift className="h-4 w-4" />
               Bonuses
-            </button> */}
+            </button>
           </nav>
         </div>
       </div>
@@ -295,11 +295,9 @@ const Employees = () => {
       ) : activeTab === "timeTracking" ? (
         <TimeTracking employees={employees} />
       ) : activeTab === "payments" ? (
-        <></>
+        <Payments employees={employees} />
       ) : (
-        // <Payments employees={employees} />
-        <></>
-        // <Bonuses employees={employees} />
+        <Bonuses employees={employees} />
       )}
 
       {isModalOpen && (

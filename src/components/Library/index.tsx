@@ -537,8 +537,12 @@ const Library = () => {
     fileName: string; // Corrected key
   }
 
-  const handleDownloadContent = (item: ContentItem) => {
-    const url = item.media_urls?.[0] || item.content_urls?.[0];
+  const handleDownloadContent = (
+    item: ContentItem,
+    typeOfTheUrl: "content" | "media"
+  ) => {
+    const url =
+      typeOfTheUrl === "content" ? item.content_urls?.[0] : item.media_urls;
     if (!url) {
       console.error("No downloadable URL found.");
       return;
@@ -697,7 +701,9 @@ const Library = () => {
                             <Eye className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDownloadContent(item)}
+                            onClick={() =>
+                              handleDownloadContent(item, "content")
+                            }
                             className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
                             aria-label="Download"
                           >
@@ -1047,7 +1053,10 @@ const Library = () => {
                                           <button
                                             onClick={() =>
                                               item &&
-                                              handleDownloadContent(item)
+                                              handleDownloadContent(
+                                                item,
+                                                "content"
+                                              )
                                             }
                                             className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
                                           >
@@ -1140,6 +1149,7 @@ const Library = () => {
               ? handleDeleteContentRequestOnly
               : handleDeleteContent
           }
+          typeOfTheURL="content"
           onDownload={handleDownloadContent}
         />
       )}

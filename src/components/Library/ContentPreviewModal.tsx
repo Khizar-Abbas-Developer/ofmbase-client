@@ -16,6 +16,7 @@ interface ContentPreviewModalProps {
   onClose: () => void;
   onDelete: (id: string) => void;
   onDownload: (item: ContentItem) => void;
+  typeOfTheURL: "content" | "media";
 }
 
 const ContentPreviewModal: React.FC<ContentPreviewModalProps> = ({
@@ -23,16 +24,20 @@ const ContentPreviewModal: React.FC<ContentPreviewModalProps> = ({
   onClose,
   onDelete,
   onDownload,
+  typeOfTheURL,
 }) => {
   const { _id, fileName, type, media_urls, content_urls } = content;
-  const fileUrl = media_urls?.[0] || content_urls?.[0] || "";
+  const fileUrl = typeOfTheURL === "content" ? content_urls : media_urls;
 
   interface ContentItem {
     media_urls?: string[];
     content_urls?: string[];
     fileName: string; // Corrected key
   }
-  const handleDownloadContent = (item: ContentItem) => {
+  const handleDownloadContent = (
+    item: ContentItem,
+    typeOfTheUrl: "content" | "media"
+  ) => {
     const url = item.content_urls?.[0] || item.media_urls?.[0];
     if (!url) {
       console.error("No downloadable URL found.");
@@ -176,7 +181,7 @@ const ContentPreviewModal: React.FC<ContentPreviewModalProps> = ({
                 Delete
               </button>
               <button
-                onClick={() => handleDownloadContent(content)}
+                onClick={() => handleDownloadContent(content, "content")}
                 className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors duration-150"
               >
                 <Download className="h-5 w-5" />

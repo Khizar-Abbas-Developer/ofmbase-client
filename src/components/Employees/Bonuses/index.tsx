@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, DollarSign, Percent } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
-import type { Employee } from '../index';
-import BonusSystemModal from './BonusSystemModal';
+import React, { useState, useEffect } from "react";
+import { Plus, Pencil, Trash2, DollarSign, Percent } from "lucide-react";
+import { supabase } from "../../../lib/supabase";
+import type { Employee } from "../index";
+import BonusSystemModal from "./BonusSystemModal";
+import axios from "axios";
+import { useAppSelector } from "../../../redux/hooks"; // Adjust the path as needed
+import toast from "react-hot-toast";
 
 interface BonusSystem {
-  id: string;
+  _id: string;
   name: string;
   threshold_amount: number;
   bonus_amount: number;
-  bonus_type: 'fixed' | 'percentage';
+  bonus_type: "fixed" | "percentage";
   employee_id?: string;
   created_at: string;
   employee?: {
@@ -22,9 +25,13 @@ interface BonusesProps {
 }
 
 const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+  const { currentUser } = useAppSelector((state) => state.user);
   const [bonusSystems, setBonusSystems] = useState<BonusSystem[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [selectedSystem, setSelectedSystem] = useState<BonusSystem | null>(null);
+  const [selectedSystem, setSelectedSystem] = useState<BonusSystem | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,81 +40,91 @@ const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
 
   const fetchBonusSystems = async () => {
     try {
-      const { data, error } = await supabase
-        .from('bonus_systems')
-        .select(`
-          *,
-          employee:employees(name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setBonusSystems(data || []);
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const response = await axios.get(
+        `${URL}/api/bonus/fetch-bonus/${requiredId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
+      setBonusSystems(response.data || []);
     } catch (error) {
-      console.error('Error fetching bonus systems:', error);
+      console.error("Error fetching bonus systems:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCreateBonusSystem = async (bonusSystem: Omit<BonusSystem, 'id' | 'created_at'>) => {
+  const handleCreateBonusSystem = async (
+    bonusSystem: Omit<BonusSystem, "id" | "created_at">
+  ) => {
     try {
-      const { data, error } = await supabase
-        .from('bonus_systems')
-        .insert([bonusSystem])
-        .select(`
-          *,
-          employee:employees(name)
-        `)
-        .single();
+      const requiredId =
+        currentUser?.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const dataToSend = { ...bonusSystem, ownerId: requiredId };
+      const response = await axios.post(
+        `${URL}/api/bonus/create-bonus`,
+        dataToSend,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
+      );
 
-      if (error) throw error;
-
-      setBonusSystems(prev => [data, ...prev]);
+      setBonusSystems((prev) => [response.data, ...prev]);
       setShowModal(false);
     } catch (error) {
-      console.error('Error creating bonus system:', error);
+      console.error("Error creating bonus system:", error);
     }
   };
 
   const handleUpdateBonusSystem = async (bonusSystem: BonusSystem) => {
     try {
-      const { error } = await supabase
-        .from('bonus_systems')
-        .update({
-          name: bonusSystem.name,
-          threshold_amount: bonusSystem.threshold_amount,
-          bonus_amount: bonusSystem.bonus_amount,
-          bonus_type: bonusSystem.bonus_type,
-          employee_id: bonusSystem.employee_id,
-        })
-        .eq('id', bonusSystem.id);
-
-      if (error) throw error;
-
-      setBonusSystems(prev =>
-        prev.map(system => system.id === bonusSystem.id ? bonusSystem : system)
+      // setIsLoading(true);
+      if (!selectedSystem?._id) {
+        toast.error("ID is required");
+      }
+      await axios.put(
+        `${URL}/api/bonus/update-bonus/${selectedSystem?._id}`,
+        bonusSystem,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        }
       );
+      setBonusSystems((prev) =>
+        prev.map((system) =>
+          system._id === selectedSystem?._id ? bonusSystem : system
+        )
+      );
+      // fetchBonusSystems();
       setShowModal(false);
       setSelectedSystem(null);
     } catch (error) {
-      console.error('Error updating bonus system:', error);
+      console.error("Error updating bonus system:", error);
     }
   };
 
   const handleDeleteBonusSystem = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('bonus_systems')
-        .delete()
-        .eq('id', id);
+      await axios.delete(`${URL}/api/bonus/delete-bonus/${id}`, {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+        },
+      });
 
-      if (error) throw error;
-
-      setBonusSystems(prev => prev.filter(system => system.id !== id));
+      setBonusSystems((prev) => prev.filter((system) => system._id !== id));
     } catch (error) {
-      console.error('Error deleting bonus system:', error);
+      console.error("Error deleting bonus system:", error);
     }
   };
 
@@ -136,8 +153,12 @@ const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
 
       {bonusSystems.length === 0 ? (
         <div className="bg-white rounded-2xl p-8 text-center">
-          <h3 className="text-lg font-semibold text-slate-800 mb-2">No bonus systems yet</h3>
-          <p className="text-slate-500 mb-6">Create your first bonus system to incentivize your team</p>
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">
+            No bonus systems yet
+          </h3>
+          <p className="text-slate-500 mb-6">
+            Create your first bonus system to incentivize your team
+          </p>
           <button
             onClick={() => setShowModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
@@ -148,13 +169,15 @@ const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {bonusSystems.map(system => (
+          {bonusSystems.map((system, i) => (
             <div
-              key={system.id}
+              key={i + 1}
               className="bg-white rounded-2xl p-6 border border-slate-100 hover:border-blue-500 transition-colors"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-slate-800">{system.name}</h3>
+                <h3 className="text-lg font-medium text-slate-800">
+                  {system.name}
+                </h3>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
@@ -166,7 +189,7 @@ const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDeleteBonusSystem(system.id)}
+                    onClick={() => handleDeleteBonusSystem(system._id)}
                     className="p-1 text-red-400 hover:text-red-600 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -178,7 +201,8 @@ const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
                   Threshold: ${system.threshold_amount.toLocaleString()}
                 </p>
                 <p className="text-sm text-slate-600 flex items-center gap-1">
-                  Bonus: {system.bonus_type === 'fixed' ? (
+                  Bonus:{" "}
+                  {system.bonus_type === "fixed" ? (
                     <>
                       <DollarSign className="h-4 w-4" />
                       {system.bonus_amount.toLocaleString()}
@@ -191,7 +215,7 @@ const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
                   )}
                 </p>
                 <p className="text-sm text-slate-600">
-                  Assigned to: {system.employee?.name || 'All Employees'}
+                  Assigned to: {system.employee?.name || "All Employees"}
                 </p>
               </div>
             </div>
@@ -205,7 +229,9 @@ const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
             setShowModal(false);
             setSelectedSystem(null);
           }}
-          onSave={selectedSystem ? handleUpdateBonusSystem : handleCreateBonusSystem}
+          onSave={
+            selectedSystem ? handleUpdateBonusSystem : handleCreateBonusSystem
+          }
           bonusSystem={selectedSystem}
           employees={employees}
         />

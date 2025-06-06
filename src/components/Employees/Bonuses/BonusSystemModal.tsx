@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { X, DollarSign, TrendingUp, Gift, Percent } from 'lucide-react';
-import type { Employee } from '../index';
+import React, { useState, useEffect } from "react";
+import { X, DollarSign, TrendingUp, Gift, Percent } from "lucide-react";
+import type { Employee } from "../index";
 
 interface BonusSystem {
   id: string;
   name: string;
   threshold_amount: number;
   bonus_amount: number;
-  bonus_type: 'fixed' | 'percentage';
+  bonus_type: "fixed" | "percentage";
   employee_id?: string;
 }
 
 interface BonusSystemModalProps {
   onClose: () => void;
-  onSave: (bonusSystem: Omit<BonusSystem, 'id'>) => void;
+  onSave: (bonusSystem: Omit<BonusSystem, "id">) => void;
   bonusSystem?: BonusSystem;
   employees: Employee[];
 }
@@ -25,11 +25,11 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
   employees,
 }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    threshold_amount: '',
-    bonus_amount: '',
-    bonus_type: 'fixed' as const,
-    employee_id: '',
+    name: "",
+    threshold_amount: "",
+    bonus_amount: "",
+    bonus_type: "fixed" as const,
+    employee_id: "",
   });
 
   useEffect(() => {
@@ -39,7 +39,7 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
         threshold_amount: bonusSystem.threshold_amount.toString(),
         bonus_amount: bonusSystem.bonus_amount.toString(),
         bonus_type: bonusSystem.bonus_type,
-        employee_id: bonusSystem.employee_id || '',
+        employee_id: bonusSystem.employee_id || "",
       });
     }
   }, [bonusSystem]);
@@ -59,7 +59,7 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -72,7 +72,7 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
         <div className="relative bg-white rounded-2xl max-w-md w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
             <h2 className="text-xl font-semibold text-slate-800">
-              {bonusSystem ? 'Edit Bonus System' : 'Create New Bonus System'}
+              {bonusSystem ? "Edit Bonus System" : "Create New Bonus System"}
             </h2>
             <button
               onClick={onClose}
@@ -84,8 +84,9 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
 
           <div className="px-6 py-4 bg-blue-50 border-b border-blue-100">
             <p className="text-sm text-blue-700">
-              Create a bonus system to reward your employees when they reach specific sales targets.
-              This helps motivate your team and drive better performance.
+              Create a bonus system to reward your employees when they reach
+              specific sales targets. This helps motivate your team and drive
+              better performance.
             </p>
           </div>
 
@@ -133,7 +134,8 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
                 />
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                When an employee's sales reach or exceed this amount, they qualify for the bonus
+                When an employee's sales reach or exceed this amount, they
+                qualify for the bonus
               </p>
             </div>
 
@@ -154,23 +156,25 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
                 <option value="percentage">Percentage of Sales</option>
               </select>
               <p className="mt-1 text-xs text-slate-500">
-                Choose whether the bonus should be a fixed amount or a percentage of sales
+                Choose whether the bonus should be a fixed amount or a
+                percentage of sales
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 <div className="flex items-center gap-2 mb-1">
-                  {formData.bonus_type === 'fixed' ? (
+                  {formData.bonus_type === "fixed" ? (
                     <DollarSign className="h-4 w-4 text-yellow-500" />
                   ) : (
                     <Percent className="h-4 w-4 text-yellow-500" />
                   )}
-                  Bonus Reward {formData.bonus_type === 'fixed' ? 'Amount' : 'Percentage'}
+                  Bonus Reward{" "}
+                  {formData.bonus_type === "fixed" ? "Amount" : "Percentage"}
                 </div>
               </label>
               <div className="relative">
-                {formData.bonus_type === 'fixed' ? (
+                {formData.bonus_type === "fixed" ? (
                   <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 ) : (
                   <Percent className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -180,20 +184,20 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
                   name="bonus_amount"
                   required
                   min="0"
-                  step={formData.bonus_type === 'fixed' ? '0.01' : '0.1'}
-                  max={formData.bonus_type === 'percentage' ? '100' : undefined}
+                  step={formData.bonus_type === "fixed" ? "0.01" : "0.1"}
+                  max={formData.bonus_type === "percentage" ? "100" : undefined}
                   value={formData.bonus_amount}
                   onChange={handleChange}
-                  placeholder={formData.bonus_type === 'fixed' ? '500' : '10'}
+                  placeholder={formData.bonus_type === "fixed" ? "500" : "10"}
                   className={`w-full ${
-                    formData.bonus_type === 'fixed' ? 'pl-9 pr-4' : 'pl-4 pr-9'
+                    formData.bonus_type === "fixed" ? "pl-9 pr-4" : "pl-4 pr-9"
                   } py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                {formData.bonus_type === 'fixed'
-                  ? 'The fixed bonus amount the employee will receive'
-                  : 'The percentage of sales the employee will receive as bonus'}
+                {formData.bonus_type === "fixed"
+                  ? "The fixed bonus amount the employee will receive"
+                  : "The percentage of sales the employee will receive as bonus"}
               </p>
             </div>
 
@@ -208,8 +212,8 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Employees</option>
-                {employees.map(employee => (
-                  <option key={employee.id} value={employee.id}>
+                {employees.map((employee) => (
+                  <option key={employee._id} value={employee._id}>
                     {employee.name}
                   </option>
                 ))}
@@ -231,7 +235,7 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
               >
-                {bonusSystem ? 'Save Changes' : 'Create Bonus System'}
+                {bonusSystem ? "Save Changes" : "Create Bonus System"}
               </button>
             </div>
           </form>

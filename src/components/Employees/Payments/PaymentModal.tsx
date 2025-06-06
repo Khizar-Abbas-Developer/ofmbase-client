@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { X, DollarSign, Calendar } from 'lucide-react';
-import type { Employee } from '../index';
+import React, { useState, useEffect } from "react";
+import { X, DollarSign, Calendar } from "lucide-react";
+import type { Employee } from "../index";
 
 interface PaymentModalProps {
   onClose: () => void;
@@ -20,11 +20,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   employees,
 }) => {
   const [formData, setFormData] = useState({
-    employee_id: '',
-    amount: '',
-    date: new Date().toISOString().split('T')[0],
-    payment_method: 'paypal',
-    description: '',
+    employee_id: "",
+    amount: "",
+    date: new Date().toISOString().split("T")[0],
+    payment_method: "paypal",
+    description: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -36,10 +36,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -51,7 +53,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       <div className="relative min-h-screen flex items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl max-w-md w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800">Create Payment</h2>
+            <h2 className="text-xl font-semibold text-slate-800">
+              Create Payment
+            </h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-150"
@@ -73,8 +77,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select employee</option>
-                {employees.map(employee => (
-                  <option key={employee.id} value={employee.id}>
+                {employees.map((employee) => (
+                  <option key={employee._id} value={employee._id}>
                     {employee.name}
                   </option>
                 ))}

@@ -40,8 +40,8 @@ import CheckoutPage from "./components/CheckoutPage";
 import PaymentSuccessPage from "./components/PaymentSuccess";
 import PaymentFailurePage from "./components/PaymentFailure";
 //
-// import New from "./components/New";
-// import Receipts from "./components/ReceiptsAndInvoices";
+import New from "./components/New";
+import Receipts from "./components/ReceiptsAndInvoices";
 
 function App() {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
@@ -129,8 +129,8 @@ function App() {
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/payment-failure" element={<PaymentFailurePage />} />
           {/* //New ROutes */}
-          {/* <Route path="/documents" element={<New />} />
-          <Route path="/receipts-and-invoices" element={<Receipts />} /> */}
+          <Route path="/documents" element={<New />} />
+          <Route path="/receipts-and-invoices" element={<Receipts />} />
         </Route>
       </Routes>
     </Router>
