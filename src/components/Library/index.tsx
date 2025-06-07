@@ -235,12 +235,12 @@ const Library = () => {
   const handleUploadContent = async (files: File[]) => {
     try {
       const creator = creators.find((c) => c.email === currentUser.email);
-      if (!creator) {
-        toast.error("Creator can only upload the content");
-        return;
+      let creatorId: any;
+      let creatorName: any;
+      if (creator) {
+        creatorId = creator._id;
+        creatorName = creator?.name;
       }
-      const creatorId = creator._id;
-      const creatorName = creator?.name;
 
       const ownerId =
         currentUser.ownerId === "Agency Owner itself"
@@ -253,8 +253,10 @@ const Library = () => {
       const media_urls = await Promise.all(
         files.map(async (file) => {
           const formData = new FormData();
-          formData.append("creatorId", creatorId);
-          formData.append("creatorName", creatorName);
+          if (creator) {
+            formData.append("creatorId", creatorId);
+            formData.append("creatorName", creatorName);
+          }
           formData.append("ownerId", ownerId);
           formData.append("folderId", selectedFolder);
           formData.append("file", file);
@@ -1149,7 +1151,14 @@ const Library = () => {
               ? handleDeleteContentRequestOnly
               : handleDeleteContent
           }
-          typeOfTheURL="content"
+          typeOfTheURL={
+            selectedContent.content_urls?.[0]?.startsWith("https")
+              ? "content"
+              : !selectedContent.content_urls?.[0]?.startsWith("https") &&
+                selectedContent.media_urls?.[0]?.startsWith("https")
+              ? "media"
+              : null
+          }
           onDownload={handleDownloadContent}
         />
       )}
