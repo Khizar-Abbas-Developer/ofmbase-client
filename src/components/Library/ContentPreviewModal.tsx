@@ -25,15 +25,9 @@ const ContentPreviewModal: React.FC<ContentPreviewModalProps> = ({
   onDelete,
   onDownload,
   typeOfTheURL,
-}) => {
-  console.log(content);
-  
-  console.log(typeOfTheURL);
-
+}) => {  
   const { _id, fileName, type, media_urls, content_urls } = content;
-  const fileUrl = typeOfTheURL === "content" ? content_urls : media_urls;
-  console.log(fileUrl);
-
+  const fileUrl = typeOfTheURL === "content" ? content_urls[0] : media_urls;
   interface ContentItem {
     media_urls?: string[];
     content_urls?: string[];
