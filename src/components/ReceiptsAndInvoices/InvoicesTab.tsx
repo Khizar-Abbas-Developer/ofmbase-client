@@ -20,18 +20,20 @@ const InvoicesTab = () => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const handleCreateInvoice = (invoice: any) => {
-    const newInvoice = {
-      id: Date.now().toString(),
-      number: invoice.number,
-      date: invoice.date,
-      dueDate: invoice.dueDate,
-      amount: invoice.items.reduce(
-        (sum: number, item: any) => sum + item.amount,
-        0
-      ),
-      status: "draft" as const,
-    };
-    setInvoices((prev) => [...prev, newInvoice]);
+    console.log(invoice);
+    
+    // const newInvoice = {
+    //   id: Date.now().toString(),
+    //   number: invoice.number,
+    //   date: invoice.date,
+    //   dueDate: invoice.dueDate,
+    //   amount: invoice.items.reduce(
+    //     (sum: number, item: any) => sum + item.amount,
+    //     0
+    //   ),
+    //   status: "draft" as const,
+    // };
+    // setInvoices((prev) => [...prev, newInvoice]);
     setShowModal(false);
   };
 

@@ -57,7 +57,7 @@ export const financialSection = [
     path: "/documents",
   },
   {
-    relation: "receiptsAndInvoices",
+    relation: "receipts",
     name: "Receipts & Invoices",
     icon: FileCheck,
     path: "/receipts-and-invoices",
