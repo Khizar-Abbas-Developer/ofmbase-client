@@ -36,13 +36,14 @@ interface Creator {
 }
 
 interface ContentRequest {
-  id: string;
+  _id: string;
   title: string;
   description: string;
   due_date: string;
   creator_id?: string;
   status: "pending" | "completed" | "rejected";
   created_at: string;
+  isContentRequest: boolean;
 }
 
 const Library = () => {
@@ -411,6 +412,8 @@ const Library = () => {
 
   const handleDeleteContent = async (id: string) => {
     try {
+      console.log("delete Content only", id);
+
       setIsLoading(true);
       await axios.delete(`${URL}/api/content/delete-content/${id}`);
       setSelectedContent(null);
@@ -438,6 +441,7 @@ const Library = () => {
   };
   const handleDeleteContentRequest = async (id: string) => {
     try {
+      console.log("delete content request", id);
       setIsLoading(true);
       await axios.delete(
         `${URL}/api/content-request/delete-content-request-only/${id}`,
@@ -675,7 +679,6 @@ const Library = () => {
                 .map((item) => {
                   const fileType = item.contentType || item.type;
                   const FileIcon = getFileIcon(fileType);
-
                   return (
                     <div
                       key={item._id}
@@ -712,7 +715,11 @@ const Library = () => {
                             <Download className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteContent(item._id)}
+                            onClick={() =>
+                              item?.isContentRequest
+                                ? handleDeleteContentRequest(item._id)
+                                : handleDeleteContent(item._id)
+                            }
                             className="p-1 text-red-400 hover:text-red-600 transition-colors"
                             aria-label="Delete"
                           >
