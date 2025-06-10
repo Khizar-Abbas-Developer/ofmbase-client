@@ -1,38 +1,57 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Plus, ArrowUpDown } from "lucide-react";
 import ReceiptModal from "./ReceiptModal";
+import axios from "axios";
+import { useAppSelector } from "../../redux/hooks"; // Adjust the path as needed
 
 interface Receipt {
-  id: string;
+  _id: string;
   number: string;
   date: string;
   amount: number;
   paymentMethod: string;
 }
 
-const ReceiptsTab = () => {
+const ReceiptsTab = ({ fetchedReceipts }: { fetchedReceipts: any }) => {
+  const { currentUser } = useAppSelector((state) => state.user);
+  const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const [showModal, setShowModal] = useState(false);
-  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [receipts, setReceipts] = useState<Receipt[]>(fetchedReceipts || []);
   const [sortField, setSortField] = useState<"date" | "number" | "amount">(
     "date"
   );
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  const handleCreateReceipt = (receipt: any) => {
-    console.log(receipt);
-    const newReceipt = {
-      id: Date.now().toString(),
-      number: receipt.number,
-      date: receipt.date,
-      amount: receipt.items.reduce(
-        (sum: number, item: any) => sum + (parseFloat(item.amount) || 0),
-        0
-      ),
-      paymentMethod: receipt.paymentMethod,
-    };
-
-    setReceipts((prev) => [...prev, newReceipt]);
-    setShowModal(false);
+  const handleCreateReceipt = async (receipt: any) => {
+    const totalAmount = receipt.items?.reduce(
+      (sum: number, item: any) => sum + Number(item.amount || 0),
+      0
+    );
+    try {
+      const requierdId =
+        currentUser.ownerId === "Agency Owner itself"
+          ? currentUser.id
+          : currentUser.ownerId;
+      const dataToSend = {
+        ...receipt,
+        ownerId: requierdId,
+        amount: totalAmount,
+      };
+      const response = await axios.post(
+        `${URL}/api/receipts/create-receipts`,
+        dataToSend,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+        }
+      );
+      setReceipts((prev) => [...prev, response.data.data]);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setShowModal(false);
+    }
   };
 
   const handleSort = (field: typeof sortField) => {
@@ -127,7 +146,7 @@ const ReceiptsTab = () => {
             </thead>
             <tbody>
               {sortedReceipts.map((receipt) => (
-                <tr key={receipt.id} className="hover:bg-slate-50">
+                <tr key={receipt._id} className="hover:bg-slate-50">
                   <td className="px-6 py-4 text-sm text-slate-600">
                     {receipt.number}
                   </td>
