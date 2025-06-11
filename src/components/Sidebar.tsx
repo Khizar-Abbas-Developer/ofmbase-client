@@ -122,7 +122,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
       ) {
         console.log("🔴 Token has expired");
         dispatch(signOutUser());
-        navigate("/sign");
+        navigate("/signin");
       }
     }
   };
