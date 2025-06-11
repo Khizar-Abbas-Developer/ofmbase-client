@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, DollarSign, Calendar } from "lucide-react";
 import type { Employee } from "../index";
+import { ClipLoader } from "react-spinners";
 
 interface PaymentModalProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   onSave,
   employees,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     employee_id: "",
     amount: "",
@@ -29,6 +31,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     onSave({
       ...formData,
       amount: parseFloat(formData.amount),
@@ -165,9 +168,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               </button>
               <button
                 type="submit"
+                disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
               >
-                Create Payment
+                {isLoading ? (
+                  <div className="flex justify-center items-center gap-2">
+                    <p>Creating...</p>
+                    <ClipLoader size={14} />
+                  </div>
+                ) : (
+                  <p>Create Payment</p>
+                )}
               </button>
             </div>
           </form>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import React, { useState } from "react";
+import { X, Plus, Trash2 } from "lucide-react";
 
 interface ReceiptModalProps {
   onClose: () => void;
@@ -7,49 +7,61 @@ interface ReceiptModalProps {
 }
 
 const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    number: '',
-    items: [{ description: '', amount: '' }],
-    paymentMethod: 'bank_transfer',
+    date: new Date().toISOString().split("T")[0],
+    number: "",
+    items: [{ description: "", amount: "" }],
+    paymentMethod: "bank_transfer",
     bankTransfer: {
-      confirmationNumber: '',
+      confirmationNumber: "",
     },
     paypal: {
-      transactionId: '',
+      transactionId: "",
     },
     creditCard: {
-      last4: '',
-      brand: '',
+      last4: "",
+      brand: "",
     },
     cash: {
-      receivedFrom: '',
+      receivedFrom: "",
     },
-    notes: '',
+    notes: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     onSave(formData);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const handlePaymentMethodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFormData(prev => ({
+  const handlePaymentMethodChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       paymentMethod: e.target.value,
     }));
   };
 
-  const handleItemChange = (index: number, field: 'description' | 'amount', value: string) => {
-    setFormData(prev => {
+  const handleItemChange = (
+    index: number,
+    field: "description" | "amount",
+    value: string
+  ) => {
+    setFormData((prev) => {
       const items = [...prev.items];
       items[index] = { ...items[index], [field]: value };
       return { ...prev, items };
@@ -57,14 +69,14 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
   };
 
   const addItem = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      items: [...prev.items, { description: '', amount: '' }],
+      items: [...prev.items, { description: "", amount: "" }],
     }));
   };
 
   const removeItem = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       items: prev.items.filter((_, i) => i !== index),
     }));
@@ -76,7 +88,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
 
   const renderPaymentFields = () => {
     switch (formData.paymentMethod) {
-      case 'bank_transfer':
+      case "bank_transfer":
         return (
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -86,16 +98,18 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
               type="text"
               name="bankTransfer.confirmationNumber"
               value={formData.bankTransfer.confirmationNumber}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                bankTransfer: { confirmationNumber: e.target.value },
-              }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  bankTransfer: { confirmationNumber: e.target.value },
+                }))
+              }
               className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         );
 
-      case 'paypal':
+      case "paypal":
         return (
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -105,16 +119,18 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
               type="text"
               name="paypal.transactionId"
               value={formData.paypal.transactionId}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                paypal: { transactionId: e.target.value },
-              }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  paypal: { transactionId: e.target.value },
+                }))
+              }
               className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         );
 
-      case 'credit_card':
+      case "credit_card":
         return (
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -126,10 +142,12 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
                 maxLength={4}
                 name="creditCard.last4"
                 value={formData.creditCard.last4}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  creditCard: { ...prev.creditCard, last4: e.target.value },
-                }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    creditCard: { ...prev.creditCard, last4: e.target.value },
+                  }))
+                }
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -140,10 +158,12 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
               <select
                 name="creditCard.brand"
                 value={formData.creditCard.brand}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  creditCard: { ...prev.creditCard, brand: e.target.value },
-                }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    creditCard: { ...prev.creditCard, brand: e.target.value },
+                  }))
+                }
                 className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select brand</option>
@@ -156,7 +176,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
           </div>
         );
 
-      case 'cash':
+      case "cash":
         return (
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -166,10 +186,12 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
               type="text"
               name="cash.receivedFrom"
               value={formData.cash.receivedFrom}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                cash: { receivedFrom: e.target.value },
-              }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  cash: { receivedFrom: e.target.value },
+                }))
+              }
               className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -186,7 +208,9 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
       <div className="relative min-h-screen flex items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl max-w-2xl w-full">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-800">Create Receipt</h2>
+            <h2 className="text-xl font-semibold text-slate-800">
+              Create Receipt
+            </h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-150"
@@ -250,7 +274,9 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
                         type="text"
                         required
                         value={item.description}
-                        onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                        onChange={(e) =>
+                          handleItemChange(index, "description", e.target.value)
+                        }
                         placeholder="Description"
                         className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
@@ -262,7 +288,9 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
                         step="0.01"
                         min="0"
                         value={item.amount}
-                        onChange={(e) => handleItemChange(index, 'amount', e.target.value)}
+                        onChange={(e) =>
+                          handleItemChange(index, "amount", e.target.value)
+                        }
                         placeholder="Amount"
                         className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
@@ -281,7 +309,9 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
 
                 <div className="flex justify-end border-t border-slate-200 pt-4">
                   <div className="text-right">
-                    <span className="text-sm font-medium text-slate-700">Total:</span>
+                    <span className="text-sm font-medium text-slate-700">
+                      Total:
+                    </span>
                     <span className="ml-2 text-lg font-bold text-slate-900">
                       ${totalAmount.toFixed(2)}
                     </span>
@@ -332,6 +362,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ onClose, onSave }) => {
               </button>
               <button
                 type="submit"
+                disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
               >
                 Create Receipt

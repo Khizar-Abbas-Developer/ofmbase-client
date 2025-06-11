@@ -24,6 +24,7 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
   bonusSystem,
   employees,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     threshold_amount: "",
@@ -46,6 +47,7 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     onSave({
       name: formData.name,
       threshold_amount: parseFloat(formData.threshold_amount),
@@ -233,6 +235,7 @@ const BonusSystemModal: React.FC<BonusSystemModalProps> = ({
               </button>
               <button
                 type="submit"
+                disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-150"
               >
                 {bonusSystem ? "Save Changes" : "Create Bonus System"}
