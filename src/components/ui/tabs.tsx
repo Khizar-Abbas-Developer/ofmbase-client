@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from "react";
 
 interface TabsProps {
   defaultValue: string;
@@ -15,6 +15,7 @@ interface TabsTriggerProps {
   value: string;
   children: React.ReactNode;
   className?: string;
+  tabChangeFunction?: (value: string) => void; // ✅ add this
 }
 
 interface TabsContentProps {
@@ -25,11 +26,10 @@ interface TabsContentProps {
 const TabsContext = React.createContext<{
   value: string;
   setValue: (value: string) => void;
-}>({ value: '', setValue: () => {} });
+}>({ value: "", setValue: () => {} });
 
 export function Tabs({ defaultValue, className, children }: TabsProps) {
   const [value, setValue] = React.useState(defaultValue);
-
   return (
     <TabsContext.Provider value={{ value, setValue }}>
       <div className={className}>{children}</div>
@@ -45,17 +45,25 @@ export function TabsList({ className, children }: TabsListProps) {
   );
 }
 
-export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
+export function TabsTrigger({
+  value,
+  children,
+  className,
+  tabChangeFunction,
+}: TabsTriggerProps) {
   const { value: selectedValue, setValue } = React.useContext(TabsContext);
   const isSelected = value === selectedValue;
 
   return (
     <button
-      onClick={() => setValue(value)}
+      onClick={() => {
+        setValue(value);
+        tabChangeFunction();
+      }}
       className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
         isSelected
-          ? 'border-blue-500 text-blue-600'
-          : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          ? "border-blue-500 text-blue-600"
+          : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
       } ${className}`}
     >
       {children}
