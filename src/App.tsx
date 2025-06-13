@@ -47,12 +47,8 @@ function App() {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const dispatch = useDispatch();
   const { currentUser } = useAppSelector((state) => state.user);
-  const loadProfile = useAuthStore((state) => state.loadProfile);
   const { profile } = useAuthStore();
 
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
   injectSpeedInsights();
 
   const handleNotification = async (data: any) => {
