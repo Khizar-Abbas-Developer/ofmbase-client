@@ -17,6 +17,7 @@ import axios from "axios";
 import { useAppSelector } from "../../redux/hooks";
 import DocumentPreviewModal from "./FilePreviewModal";
 import { ClipLoader } from "react-spinners";
+import toast from "react-hot-toast";
 
 interface Tab {
   _id: string;
@@ -38,6 +39,8 @@ interface Document {
 }
 
 const New = () => {
+  const [downloadingDocument, setDownloadingDocument] = useState(false);
+  const [deletingDocument, setDeletingDocument] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
@@ -155,7 +158,6 @@ const New = () => {
       }
     } catch (error) {
       console.error(error);
-      console.log("ok");
       setCreatingFolder(false);
     }
   };
@@ -168,7 +170,10 @@ const New = () => {
       Array.from(files).forEach((file) => {
         formData.append("file", file); // 👈 backend uses upload.array("file")
       });
-
+      if (!activeTab) {
+        toast.error("Active Tab isn't available!");
+        return;
+      }
       const { data } = await axios.post(
         `${URL}/api/document/tabs/${activeTab}/folders/${folderId}/upload`,
         formData,
@@ -204,9 +209,7 @@ const New = () => {
   const handleOpenFolder = async (folderId: string) => {
     setSelectedFolderId(folderId);
   };
-  const handleTabSelect = async () => {
-    setSelectedFolderId(null); // optional
-  };
+
   const DefaultFileIcon = () => (
     <svg
       className="h-5 w-5 text-gray-400"
@@ -226,9 +229,62 @@ const New = () => {
 
     return DefaultFileIcon;
   };
-  const handleDeleteDocument = (id: string) => {
-    console.log(id);
+  const handleDeleteDocument = async (id: string) => {
+    try {
+      setDeletingDocument(true);
+      const response = await axios.delete(
+        `${URL}/api/document/tabs/delete-document/${id}`
+      );
+      const deletedId = response.data.deletedDocument._id;
+      // Remove the deleted document from the state
+      setDocumentsToDisplay((prev) =>
+        prev.filter((doc) => doc._id !== deletedId)
+      );
+      fetchTabs();
+      setPreviewDocumetn(null);
+      setSelectedFolderId(selectedFolderId);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setDeletingDocument(false);
+    }
   };
+  const handleTabSelect = async (value: any) => {
+    setActiveTab(value);
+    if (selectedFolderId) {
+      setSelectedFolderId(null); // optional
+    }
+  };
+  //Download functionality
+  const handleDownloadDocument = (item: any) => {
+    const url = item?.url;
+    if (!url) {
+      console.error("No downloadable URL found.");
+      return;
+    }
+
+    setDownloadingDocument(true); // Set loading state before download starts
+
+    fetch(url, { mode: "cors" }) // Ensure CORS if needed
+      .then((res) => res.blob())
+      .then((blob) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = item.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      })
+      .catch((err) => {
+        console.error("Download failed", err);
+      })
+      .finally(() => {
+        setDownloadingDocument(false); // Always reset state after completion
+      });
+  };
+
   return (
     <>
       {loading ? (
@@ -369,6 +425,7 @@ const New = () => {
                                 <label className="cursor-pointer ">
                                   <input
                                     type="file"
+                                    disabled={uploadingDocument}
                                     multiple
                                     className="hidden"
                                     onChange={(e) =>
@@ -379,7 +436,7 @@ const New = () => {
                                       )
                                     }
                                   />
-                                  <div className="flex p-1 gap-2 items-center justify-center">
+                                  <div className="flex p-0 lg:p-1 gap-0 lg:gap-2 items-center justify-center">
                                     {uploadingDocument ? (
                                       <>
                                         <p>Please wait...</p>
@@ -388,7 +445,7 @@ const New = () => {
                                         </p>
                                       </>
                                     ) : (
-                                      <p>Upload Document</p>
+                                      <p className="text-xs">Upload Document</p>
                                     )}
                                     <Upload className="h-5 w-5 text-white hover:text-slate-600 transition-colors" />
                                   </div>
@@ -432,16 +489,33 @@ const New = () => {
                                             className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
                                             aria-label="Download"
                                             onClick={() =>
-                                              handleDeleteDocument(item._id)
+                                              handleDownloadDocument(item)
                                             }
                                           >
-                                            <Download className="h-4 w-4" />
+                                            {downloadingDocument ? (
+                                              <ClipLoader
+                                                size={14}
+                                                color="green"
+                                              />
+                                            ) : (
+                                              <Download className="h-4 w-4" />
+                                            )}
                                           </button>
                                           <button
                                             className="p-1 text-red-400 hover:text-red-600 transition-colors"
                                             aria-label="Delete"
+                                            onClick={() =>
+                                              handleDeleteDocument(item._id)
+                                            }
                                           >
-                                            <Trash2 className="h-4 w-4" />
+                                            {deletingDocument ? (
+                                              <ClipLoader
+                                                size={14}
+                                                color="red"
+                                              />
+                                            ) : (
+                                              <Trash2 className="h-4 w-4" />
+                                            )}
                                           </button>
                                         </div>
                                       </div>
@@ -458,10 +532,11 @@ const New = () => {
                                 <p className="text-slate-500 mb-6">
                                   Upload your first Document to this folder
                                 </p>
-                                <div className="flex gap-4 items-center px-4 py-2 bg-black w-[20%] mx-auto text-white rounded-xl hover:bg-gray-800 transition-colors">
+                                <div className="flex gap-4 items-center px-4 py-0 bg-black w-[15%] lg:w-[15%] mx-auto text-white rounded-xl hover:bg-gray-800 transition-colors">
                                   <label className="cursor-pointer ">
                                     <input
                                       type="file"
+                                      disabled={uploadingDocument}
                                       multiple
                                       className="hidden"
                                       onChange={(e) =>
@@ -472,7 +547,7 @@ const New = () => {
                                         )
                                       }
                                     />
-                                    <div className="flex p-1 gap-2 items-center justify-center">
+                                    <div className="flex p-0 lg:p-1 gap-0 lg:gap-2 items-center justify-center">
                                       {uploadingDocument ? (
                                         <>
                                           <p>Please wait...</p>
@@ -484,7 +559,9 @@ const New = () => {
                                           </p>
                                         </>
                                       ) : (
-                                        <p>Upload Document</p>
+                                        <p className="text-xs">
+                                          Upload Document
+                                        </p>
                                       )}
                                       <Upload className="h-5 w-5 text-white hover:text-slate-600 transition-colors" />
                                     </div>
@@ -584,6 +661,9 @@ const New = () => {
           request={previewDocument}
           onClose={() => setPreviewDocumetn(null)}
           onDelete={handleDeleteDocument}
+          deletingDocument={deletingDocument}
+          handleDownload={handleDownloadDocument}
+          downloadingDocument={downloadingDocument}
         />
       )}
     </>

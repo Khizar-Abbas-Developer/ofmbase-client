@@ -58,7 +58,7 @@ export function TabsTrigger({
     <button
       onClick={() => {
         setValue(value);
-        tabChangeFunction();
+        tabChangeFunction && tabChangeFunction(value);
       }}
       className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
         isSelected
@@ -69,8 +69,8 @@ export function TabsTrigger({
       {children}
     </button>
   );
-}
 
+}
 export function TabsContent({ value, children }: TabsContentProps) {
   const { value: selectedValue } = React.useContext(TabsContext);
 

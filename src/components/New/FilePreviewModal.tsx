@@ -1,5 +1,6 @@
 import React from "react";
 import { X, Download, Trash2, Calendar, User } from "lucide-react";
+import { ClipLoader } from "react-spinners";
 
 interface RequestPreviewModalProps {
   request: {
@@ -11,12 +12,18 @@ interface RequestPreviewModalProps {
   };
   onClose: () => void;
   onDelete: (id: string) => void;
+  handleDownload: (item: any) => void;
+  deletingDocument: boolean;
+  downloadingDocument: boolean;
 }
 
 const DocumentPreviewModal: React.FC<RequestPreviewModalProps> = ({
   request,
   onClose,
   onDelete,
+  deletingDocument,
+  handleDownload,
+  downloadingDocument,
 }) => {
   const isImage = (url: string) => {
     return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
@@ -32,7 +39,7 @@ const DocumentPreviewModal: React.FC<RequestPreviewModalProps> = ({
         <img
           src={url}
           alt="Reference content"
-          className="max-h-full w-full object-contain rounded-lg"
+          className="max-h-[100%] w-full object-contain rounded-lg"
         />
       );
     }
@@ -85,18 +92,18 @@ const DocumentPreviewModal: React.FC<RequestPreviewModalProps> = ({
                 <h4 className="text-sm font-medium text-slate-700 mb-4">
                   {request.name}
                 </h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="relative group">
                     {renderMediaPreview(request.url)}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
-                      <a
-                        href={request.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 bg-white rounded-full hover:bg-slate-100 transition-colors"
-                      >
+                    <div
+                      className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg"
+                      onClick={() => handleDownload(request)}
+                    >
+                      {downloadingDocument ? (
+                        <ClipLoader size={20} color="green" />
+                      ) : (
                         <Download className="h-5 w-5 text-slate-700" />
-                      </a>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -109,8 +116,17 @@ const DocumentPreviewModal: React.FC<RequestPreviewModalProps> = ({
               onClick={() => onDelete(request._id)}
               className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors duration-150"
             >
-              <Trash2 className="h-5 w-5" />
-              Delete Document
+              {deletingDocument ? (
+                <>
+                  <ClipLoader size={14} color="red" />
+                  Please waite
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-5 w-5" />
+                  Delete Document
+                </>
+              )}
             </button>
           </div>
         </div>
