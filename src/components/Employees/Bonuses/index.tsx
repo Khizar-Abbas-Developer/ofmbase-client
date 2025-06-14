@@ -92,7 +92,7 @@ const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
       if (!selectedSystem?._id) {
         toast.error("ID is required");
       }
-      await axios.put(
+      const response = await axios.put(
         `${URL}/api/bonus/update-bonus/${selectedSystem?._id}`,
         bonusSystem,
         {
@@ -101,12 +101,7 @@ const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
           },
         }
       );
-      setBonusSystems((prev) =>
-        prev.map((system) =>
-          system._id === selectedSystem?._id ? bonusSystem : system
-        )
-      );
-      // fetchBonusSystems();
+      fetchBonusSystems();
       setShowModal(false);
       setSelectedSystem(null);
     } catch (error) {
@@ -134,8 +129,7 @@ const Bonuses: React.FC<BonusesProps> = ({ employees }) => {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
-  }
-
+  }  
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
