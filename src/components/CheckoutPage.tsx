@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useStripe } from "@stripe/react-stripe-js";
 import axios from "axios";
 import { useAppSelector } from "../redux/hooks";
 import { ClipLoader } from "react-spinners";
@@ -8,21 +7,25 @@ import { TrendingUp } from "lucide-react";
 
 const CheckoutPage = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("stripe");
   const { currentUser } = useAppSelector((state) => state.user);
   const location = useLocation();
   const navigate = useNavigate();
-  const stripe = useStripe();
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
 
   const { plan } = location.state || {};
 
-  const handleStripeCheckout = async () => {
-    if (!stripe || !plan) return;
-
+  const handleCheckout = async () => {
+    if (!plan) return;
     setIsLoading(true);
     try {
+      const endpoint =
+        paymentMethod === "stripe"
+          ? "create-checkout-session"
+          : "create-coinbase-session";
+
       const response = await axios.post(
-        `${URL}/api/payment/create-checkout-session`,
+        `${URL}/api/payment/${endpoint}`,
         {
           planId: plan.backEndId,
           userId: currentUser.id,
@@ -34,14 +37,15 @@ const CheckoutPage = () => {
         }
       );
 
-      const { url, sessionId } = response.data;
-      localStorage.setItem("stripeSessionId", sessionId); // fallback if no Redux setup
-      
+      const { url, chargeId, sessionId } = response.data;
+      localStorage.setItem(
+        paymentMethod === "stripe" ? "stripeSessionId" : "coinbaseChargeId", // ✅ correct key
+        paymentMethod === "stripe" ? sessionId : chargeId
+      );
 
-      // ✅ Redirect user to Stripe Checkout hosted page
       window.location.href = url;
     } catch (err) {
-      console.error("Error creating Stripe Checkout session:", err);
+      console.error("Error creating Checkout session:", err);
       navigate("/payment-failure");
     } finally {
       setIsLoading(false);
@@ -58,6 +62,21 @@ const CheckoutPage = () => {
         )}
 
         <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Select Payment Method:
+          </label>
+          <select
+            className="border border-gray-300 rounded-md px-3 py-2 w-full"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            <option value="stripe">Stripe</option>
+            <option value="coinbase">Coinbase</option>
+          </select>
+        </div>
+
         <div className="flex items-start gap-4">
           <div className="p-2 bg-indigo-600 rounded-lg">
             <TrendingUp className="h-6 w-6 text-white" />
@@ -80,7 +99,7 @@ const CheckoutPage = () => {
         </div>
 
         <button
-          onClick={handleStripeCheckout}
+          onClick={handleCheckout}
           disabled={isLoading}
           className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md text-sm font-medium transition disabled:opacity-50"
         >

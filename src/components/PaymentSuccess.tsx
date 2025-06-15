@@ -12,52 +12,77 @@ const PaymentSuccessPage = () => {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
 
   useEffect(() => {
-    const sessionId = localStorage.getItem("stripeSessionId");
-    console.log("Session ID from localStorage:", sessionId);
+    const stripeSessionId = localStorage.getItem("stripeSessionId");
+    const coinbaseChargeId = localStorage.getItem("coinbaseChargeId");
+    const currentDate = new Date();
+    const expiryDate = new Date();
+    expiryDate.setMonth(currentDate.getMonth() + 1);
 
-    if (!sessionId) return;
+    const confirmSubscription = async ({ backEndId, userId }) => {
+      const confirmRes = await axios.post(
+        `${URL}/api/user/payment-confirm`,
+        {
+          backEndId,
+          userId,
+          subscriptionStart: currentDate.toISOString(),
+          subscriptionExpiry: expiryDate.toISOString(),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+        }
+      );
 
-    (async () => {
+      dispatch(updateUserFields(confirmRes.data.user));
+    };
+
+    const verifyStripe = async () => {
       try {
-        // ✅ Step 1: Verify session with backend
         const { data } = await axios.post(`${URL}/api/payment/verify-session`, {
-          sessionId,
+          sessionId: stripeSessionId,
         });
 
-        const { plan, userId } = data;
+        await confirmSubscription({
+          backEndId: data.plan.backEndId,
+          userId: data.userId,
+        });
 
-        // ✅ Step 2: Calculate dates
-        const currentDate = new Date();
-        const expiryDate = new Date();
-        expiryDate.setMonth(currentDate.getMonth() + 1);
+        localStorage.removeItem("stripeSessionId");
+      } catch (err) {
+        console.error("Stripe verification failed:", err);
+        navigate("/payment-failure");
+      }
+    };
 
-        // ✅ Step 3: Save payment confirmation to backend
-        const confirmRes = await axios.post(
-          `${URL}/api/user/payment-confirm`,
+    const verifyCoinbase = async () => {
+      try {
+        const { data } = await axios.post(
+          `${URL}/api/payment/verify-coinbase-session`,
           {
-            backEndId: plan.backEndId,
-            userId,
-            subscriptionStart: currentDate.toISOString(),
-            subscriptionExpiry: expiryDate.toISOString(),
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${currentUser.token}`,
-            },
+            chargeId: coinbaseChargeId,
           }
         );
 
-        // ✅ Step 4: Update Redux user state
-        dispatch(updateUserFields(confirmRes.data.user));
+        if (data.status === "COMPLETED") {
+          await confirmSubscription({
+            backEndId: data.plan.backEndId,
+            userId: data.userId,
+          });
 
-        // ✅ Step 5: Clean up localStorage
-        localStorage.removeItem("stripeSessionId");
+          localStorage.removeItem("coinbaseChargeId");
+        } else {
+          navigate("/payment-failure");
+        }
       } catch (err) {
-        console.error("Error verifying session or updating DB:", err);
-        navigate("/payment-failure"); // optional: redirect to failure page
+        console.error("Coinbase verification failed:", err);
+        navigate("/payment-failure");
       }
-    })();
-  }, [dispatch, navigate]);
+    };
+
+    if (stripeSessionId) verifyStripe();
+    else if (coinbaseChargeId) verifyCoinbase();
+  }, [dispatch, navigate, currentUser.token, URL]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-green-100">
