@@ -9,6 +9,7 @@ import { useAuthStore } from "./lib/store";
 import { injectSpeedInsights } from "@vercel/speed-insights";
 
 // Layouts
+// Layouts
 import AuthLayout from "./components/Auth/AuthLayout";
 import ProtectedLayout from "./components/ProtectedLayout";
 
