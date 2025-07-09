@@ -34,6 +34,10 @@ export interface Employee {
 const Employees = () => {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const { currentUser } = useAppSelector((state) => state.user);
+  const accessibleModules = currentUser?.accessibleModules || [];
+  if (accessibleModules.includes("timetracking")) {
+    console.log(true);
+  }
   const [activeTab, setActiveTab] = useState<
     "employees" | "timeTracking" | "bonuses" | "payments"
   >("employees");
@@ -225,8 +229,12 @@ const Employees = () => {
                   : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
               }`}
             >
-              <Clock className="h-4 w-4" />
-              Time Tracking
+              {accessibleModules.includes("timetracking") ? (
+                <>
+                  <Clock className="h-4 w-4" />
+                  Time Tracking
+                </>
+              ) : null}
             </button>
             <button
               onClick={() => setActiveTab("payments")}
@@ -236,8 +244,12 @@ const Employees = () => {
                   : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
               }`}
             >
-              <DollarSign className="h-4 w-4" />
-              Payments
+              {accessibleModules.includes("payments") ? (
+                <>
+                  <DollarSign className="h-4 w-4" />
+                  Payments
+                </>
+              ) : null}
             </button>
             <button
               onClick={() => setActiveTab("bonuses")}
@@ -247,8 +259,12 @@ const Employees = () => {
                   : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
               }`}
             >
-              <Gift className="h-4 w-4" />
-              Bonuses
+              {accessibleModules.includes("bonuses") ? (
+                <>
+                  <Gift className="h-4 w-4" />
+                  Bonuses
+                </>
+              ) : null}
             </button>
           </nav>
         </div>
@@ -292,13 +308,14 @@ const Employees = () => {
             </div>
           )}
         </>
-      ) : activeTab === "timeTracking" ? (
+      ) : activeTab === "timeTracking" &&
+        accessibleModules.includes("timetracking") ? (
         <TimeTracking employees={employees} />
-      ) : activeTab === "payments" ? (
+      ) : activeTab === "payments" && accessibleModules.includes("payments") ? (
         <Payments employees={employees} />
-      ) : (
+      ) : activeTab === "bonuses" && accessibleModules.includes("bonuses") ? (
         <Bonuses employees={employees} />
-      )}
+      ) : null}
 
       {isModalOpen && (
         <EmployeeModal

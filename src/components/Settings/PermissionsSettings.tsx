@@ -18,9 +18,6 @@ const MODULES = [
   "Dashboard",
   "Creators",
   "Employees",
-  "TimeTracking",
-  "Payments",
-  "Bonuses",
   "Tasks",
   "Library",
   "Marketing",
@@ -31,6 +28,9 @@ const MODULES = [
   "Invoices",
   "Credentials",
   "Settings",
+  "TimeTracking",
+  "Payments",
+  "Bonuses",
 ];
 
 const PermissionsSettings = () => {
