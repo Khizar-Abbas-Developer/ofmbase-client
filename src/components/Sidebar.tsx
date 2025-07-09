@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "../redux/hooks";
 import { signOutUser } from "../redux/user/userSlice";
 import { LogOut, TrendingUp, UserCircle } from "lucide-react";
@@ -182,6 +182,14 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
           {renderSection("SETTINGS", settingsSection)}
         </nav>
         {/* Logout */}
+        <div className="flex flex-col ml-6 w-[500px] font-semibold justify-between gap-4 p-4">
+          <Link to="/privacy-policy">
+            <p className="whitespace-nowrap">Privacy Policy</p>
+          </Link>
+          <Link to="/terms-and-conditions">
+            <p className="whitespace-nowrap">Terms and Conditions</p>
+          </Link>
+        </div>
         <div className="border-t border-slate-100 p-6">
           <button
             onClick={handleSignOut}
@@ -221,6 +229,14 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
                 <span>{item.name}</span>
               </NavLink>
             ))}
+          <div className="flex w-[500px] font-semibold justify-between gap-4 p-4">
+            <Link to="/privacy-policy">
+              <p className="whitespace-nowrap">Privacy Policy</p>
+            </Link>
+            <Link to="/terms-and-conditions">
+              <p className="whitespace-nowrap">Terms and Conditions</p>
+            </Link>
+          </div>
 
           {/* Logout Button - Mobile */}
           <button
