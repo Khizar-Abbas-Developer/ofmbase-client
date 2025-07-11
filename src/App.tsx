@@ -45,6 +45,9 @@ import New from "./components/New";
 import Receipts from "./components/ReceiptsAndInvoices";
 import Privacy from "./components/PrivacyPolicyContract/Privacy";
 import TermsAndConditions from "./components/TermsAndConditions/TermsAndConditions";
+import VerifyEmailSent from "./components/Auth/VerifyEmailSent";
+import ForgotPasswordPage from "./components/Auth/ForgotPassword";
+import ResetPasswordPage from "./components/Auth/ResetPassword";
 
 function App() {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
@@ -100,8 +103,10 @@ function App() {
         {/* Auth Routes */}
         <Route element={<AuthLayout />}>
           <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
           <Route path="/verify-email/:token" element={<VerifyEmail />} />
+          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         </Route>
 
         {/* Protected Routes */}
