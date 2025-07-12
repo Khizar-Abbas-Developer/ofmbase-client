@@ -35,9 +35,7 @@ const Employees = () => {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const { currentUser } = useAppSelector((state) => state.user);
   const accessibleModules = currentUser?.accessibleModules || [];
-  if (accessibleModules.includes("timetracking")) {
-    console.log(true);
-  }
+
   const [activeTab, setActiveTab] = useState<
     "employees" | "timeTracking" | "bonuses" | "payments"
   >("employees");

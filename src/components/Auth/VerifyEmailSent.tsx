@@ -4,13 +4,14 @@ import { Mail, ArrowLeft, CheckCircle, Send, Shield } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 import axios from "axios";
-
+import { BiSolidCommentError } from "react-icons/bi";
 
 const VerifyEmailSent = () => {
   const location = useLocation();
   const [formData, setFormData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const state = location.state;
@@ -27,8 +28,8 @@ const VerifyEmailSent = () => {
         method: "custom", // adds a new key or overrides existing one
       };
       const response = await axios.post(`${URL}/api/user/register`, dataToSend);
-    } catch (error) {
-      console.log(error);
+    } catch (error: any) {
+      setError(error.response.data.message);
     } finally {
       setIsLoading(false);
     }
@@ -93,17 +94,25 @@ const VerifyEmailSent = () => {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.6, delay: 0.2 }}
-                  className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg"
+                  className={`w-20 h-20 bg-gradient-to-br ${
+                    error
+                      ? "from-red-500 to-red-600"
+                      : "from-green-500 to-emerald-600"
+                  }  rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg`}
                 >
-                  <CheckCircle className="text-white" size={36} />
+                  {/* <CheckCircle className="text-white" size={36} /> */}
+                  <BiSolidCommentError className="text-white" size={36} />
                 </motion.div>
 
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                  Verify Your Email
+                  {!error ? "Verify Your Email" : error}
                 </h1>
 
                 <p className="text-gray-600 leading-relaxed mb-6">
-                  We've sent a password reset link to{" "}
+                  {error === "User already exists"
+                    ? "User with this email address already exists"
+                    : "We've sent a verification email link to "}
+                  <br />
                   <span className="font-semibold text-gray-900">
                     {formData.email}
                   </span>
@@ -119,11 +128,20 @@ const VerifyEmailSent = () => {
                       <h3 className="font-semibold text-blue-900 mb-1">
                         Next Steps:
                       </h3>
-                      <ul className="text-blue-800 text-sm space-y-1">
-                        <li>• Check your email inbox</li>
-                        <li>• Click the "Verify Email" button in the email</li>
-                        <li>• Sign in with your new account</li>
-                      </ul>
+                      {error === "User already exists" ? (
+                        <ul className="text-blue-800 text-sm space-y-1">
+                          <li>• Sign in with your existing account</li>
+                          <li>• If you forgot your password , reset it</li>
+                        </ul>
+                      ) : (
+                        <ul className="text-blue-800 text-sm space-y-1">
+                          <li>• Check your email inbox</li>
+                          <li>
+                            • Click the "Verify Email" button in the email
+                          </li>
+                          <li>• Sign in with your new account</li>
+                        </ul>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -139,29 +157,32 @@ const VerifyEmailSent = () => {
                       Back to Sign In
                     </motion.button>
                   </Link>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => signUp()}
-                    className="w-full border-2 border-gray-200 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                  >
-                    Resend Email
-                  </motion.button>
+                  {!error && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => signUp()}
+                      className="w-full border-2 border-gray-200 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                    >
+                      Resend Email
+                    </motion.button>
+                  )}
                 </div>
 
                 {/* Help Text */}
-                <div className="mt-6 text-center">
-                  <p className="text-gray-500 text-sm">
-                    Didn't receive the email? Check your spam folder or{" "}
-                    <button
-                      onClick={() => signUp()}
-                      className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
-                    >
-                      try again
-                    </button>
-                  </p>
-                </div>
+                {!error && (
+                  <div className="mt-6 text-center">
+                    <p className="text-gray-500 text-sm">
+                      Didn't receive the email? Check your spam folder or{" "}
+                      <button
+                        onClick={() => signUp()}
+                        className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                      >
+                        try again
+                      </button>
+                    </p>
+                  </div>
+                )}
               </motion.div>
               {/* Security Notice */}
               <motion.div

@@ -9,7 +9,6 @@ import { singInSuccess } from "../../redux/user/userSlice";
 import { Link, useNavigate } from "react-router-dom";
 import { ClipLoader } from "react-spinners";
 
-
 const AuthPage = () => {
   const URL = import.meta.env.VITE_PUBLIC_BASE_URL;
   const dispatch = useAppDispatch();
